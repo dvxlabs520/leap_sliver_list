@@ -144,4 +144,16 @@ void main() {
     await tester.pump();
     expect(find.text("Header 1"), findsOneWidget);
   });
+
+  testWidgets("headers are exposed as semantics headers", (tester) async {
+    final handle = tester.ensureSemantics();
+    final scroll = ScrollController();
+    addTearDown(scroll.dispose);
+    await pumpList(tester, build(scroll, null));
+    expect(
+      tester.getSemantics(find.text("Header 0")),
+      matchesSemantics(isHeader: true, label: "Header 0"),
+    );
+    handle.dispose();
+  });
 }
