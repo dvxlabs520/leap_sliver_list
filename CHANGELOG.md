@@ -14,7 +14,8 @@ New features. All changes are backwards compatible (additions only).
 
 ### Other
 
-* Example app: new "Chat and sections" page.
+* Example app rewritten as a Material 3 demo (big list, chat, sections with sticky headers, anchoring, `SliverList` comparison with frame time meter, light/dark theme) with widget tests.
+* The example deploy workflow now has `contents: write` permission and commits as the repository owner.
 * New widget tests for each feature, plus semantics tests that guard parity with `ListView` (scroll child count and item indexes).
 * Not done: a getter for the active sticky header ([upstream #56](https://github.com/superlistapp/super_sliver_list/issues/56)), sectioned list helper, an estimator per item kind, grid.
 

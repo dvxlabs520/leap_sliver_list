@@ -27,3 +27,6 @@ jobs:
         run: flutter analyze --no-fatal-infos
       - name: Test
         run: flutter test
+      - name: Test (example)
+        run: flutter test
+        working-directory: ./example
