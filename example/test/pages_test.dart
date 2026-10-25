@@ -1,0 +1,68 @@
+import "package:flutter/material.dart";
+import "package:flutter_test/flutter_test.dart";
+
+import "package:example/app.dart";
+
+Future<void> _pumpApp(WidgetTester tester) async {
+  tester.view.physicalSize = const Size(1200, 900);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  await tester.pumpWidget(const DemoApp());
+}
+
+Future<void> _openPage(WidgetTester tester, String title) async {
+  await tester.tap(
+    find.descendant(
+      of: find.byType(NavigationRail),
+      matching: find.text(title),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+void main() {
+  testWidgets("big list jumps, animates and cancels", (tester) async {
+    await _pumpApp(tester);
+    expect(find.text("Item 0"), findsOneWidget);
+
+    await tester.tap(find.text("Jump"));
+    await tester.pumpAndSettle();
+    expect(find.text("Item 5000"), findsOneWidget);
+    expect(find.text("Item 0"), findsNothing);
+
+    await tester.tap(find.text("Animate"));
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(find.text("Cancel"));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets("chat adds messages above and below", (tester) async {
+    await _pumpApp(tester);
+    await _openPage(tester, "Chat");
+    expect(find.text("#59"), findsOneWidget);
+
+    await tester.tap(find.text("Add below"));
+    await tester.pumpAndSettle();
+    // Still at the end: the new message is visible.
+    expect(find.text("#60"), findsOneWidget);
+
+    await tester.tap(find.text("Add 10 above"));
+    await tester.pumpAndSettle();
+    expect(find.text("#60"), findsOneWidget);
+    expect(find.text("#-1"), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets("theme can be switched", (tester) async {
+    await _pumpApp(tester);
+    await tester.tap(find.byTooltip("Dark theme"));
+    await tester.pumpAndSettle();
+    final context = tester.element(find.byType(Scaffold));
+    expect(Theme.of(context).brightness, Brightness.dark);
+    await tester.tap(find.byTooltip("Light theme"));
+    await tester.pumpAndSettle();
+    expect(Theme.of(tester.element(find.byType(Scaffold))).brightness,
+        Brightness.light);
+  });
+}
