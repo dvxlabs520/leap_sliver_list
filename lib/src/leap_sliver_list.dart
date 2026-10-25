@@ -168,6 +168,16 @@ class ListController extends ChangeNotifier {
     return _delegate!.numberOfItemsWithEstimatedExtent;
   }
 
+  /// Returns the scroll offset of the leading edge of the item at [index],
+  /// relative to the start of this list (not the whole scroll view).
+  ///
+  /// The value may be an estimate if items before [index] have not been laid
+  /// out yet (see [extentForIndex]).
+  double offsetForIndex(int index) {
+    assert(_delegate != null, "ListController is not attached.");
+    return _delegate!.offsetForIndex(index);
+  }
+
   /// Returns the extent of the item at [index].
   ///
   /// If `isEstimated` is `true`, the returned extent is an estimate and may not
@@ -271,7 +281,17 @@ class ListController extends ChangeNotifier {
     }
   }
 
-  @visibleForTesting
+  /// Returns the scroll offset at which the item at [index] would sit at
+  /// [alignment] within the viewport, where 0.0 is the leading edge and 1.0 the
+  /// trailing edge.
+  ///
+  /// This is the offset that [jumpToItem] scrolls to. Together with the current
+  /// scroll offset it gives an item's position in the viewport, which is
+  /// useful for questions such as "which is the topmost item not hidden behind
+  /// a header?".
+  ///
+  /// The returned value may be an estimate if the item (or items before it)
+  /// have not been laid out yet. It is not clamped to the scroll extent.
   double getOffsetToReveal(int index, double alignment, {Rect? rect}) {
     assert(_delegate != null, "ListController is not attached.");
     return _delegate!.getOffsetToReveal(
