@@ -191,31 +191,56 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
         return false;
       }
 
-      double offset = 0;
-      bool finished = false;
+      // Top level slivers in viewport order.
+      final children = <RenderSliver>[];
       viewport.visitChildren((child) {
-        if (finished) {
-          return;
-        }
         if (child is! RenderSliver) {
           assert(false, "Unexpected non-sliver child of viewport");
           return;
         }
-        if (isParent(child)) {
-          final difference =
-              constraints.precedingScrollExtent -
-              child.constraints.precedingScrollExtent;
-          offset += difference;
-          finished = true;
-          return;
-        }
-        if (child == this) {
-          finished = true;
-          return;
-        }
-        offset += child.geometry!.scrollExtent;
+        children.add(child);
       });
-      assert(finished, "Viewport doesn't seem to contain current sliver?");
+
+      // The sliver that is, or contains, this sliver.
+      final topLevelIndex = children.indexWhere(
+        (child) => child == this || isParent(child),
+      );
+      assert(
+        topLevelIndex != -1,
+        "Viewport doesn't seem to contain current sliver?",
+      );
+      if (topLevelIndex == -1) {
+        return 0.0;
+      }
+
+      // Preceding scroll extent is measured outwards from the viewport center:
+      // slivers after the center count the slivers between the center and
+      // them, slivers before the center (reverse growth direction) count
+      // the slivers between them and the center.
+      var centerIndex = 0;
+      if (viewport is RenderViewport && viewport.center != null) {
+        centerIndex = children.indexOf(viewport.center!);
+        if (centerIndex == -1) {
+          centerIndex = 0;
+        }
+      }
+
+      double offset = 0;
+      if (topLevelIndex >= centerIndex) {
+        for (var i = centerIndex; i < topLevelIndex; ++i) {
+          offset += children[i].geometry!.scrollExtent;
+        }
+      } else {
+        for (var i = topLevelIndex + 1; i < centerIndex; ++i) {
+          offset += children[i].geometry!.scrollExtent;
+        }
+      }
+      final topLevel = children[topLevelIndex];
+      if (topLevel != this) {
+        offset +=
+            constraints.precedingScrollExtent -
+            topLevel.constraints.precedingScrollExtent;
+      }
       return offset;
     }
 
@@ -850,6 +875,14 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
           _childScrollOffsetEstimation = null;
           final childScrollOffset = this.childScrollOffset(c)!;
 
+          // Slivers before the viewport center grow in the reverse direction:
+          // the viewport negates their scroll offset correction and viewport
+          // pixels move opposite to the sliver scroll offset.
+          final direction =
+              constraints.growthDirection == GrowthDirection.forward
+              ? 1.0
+              : -1.0;
+
           var correction = childScrollOffset - estimation.offset;
           correction +=
               constraints.precedingScrollExtent -
@@ -857,7 +890,8 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
 
           final currentScrollPosition = getViewport()?.offset.pixels ?? 0.0;
           correction +=
-              layoutPass.initialScrollPosition - currentScrollPosition;
+              (layoutPass.initialScrollPosition - currentScrollPosition) *
+              direction;
 
           if (!estimation.revealingRect) {
             final childAlignmentWithinViewport = estimation.alignment;
@@ -884,20 +918,29 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
 
           final position = getViewport()!.offset as ScrollPosition;
 
-          // Max scroll extent with applied corrections for this layout pass.
-          final maxScrollExtent =
-              position.maxScrollExtent -
+          // Scroll extent bounds with applied corrections for this layout pass.
+          // Growing a sliver after the center moves the maximum, growing a
+          // sliver before the center moves the minimum (in the opposite
+          // direction).
+          var minScrollExtent = position.minScrollExtent;
+          var maxScrollExtent = position.maxScrollExtent;
+          final extentChange =
+              _totalExtent() -
               initialExtent +
-              _totalExtent() +
               constraints.precedingScrollExtent -
               estimation.precedingScrollExtent;
+          if (direction > 0) {
+            maxScrollExtent += extentChange;
+          } else {
+            minScrollExtent -= extentChange;
+          }
 
           // Try to prevent overscroll.
-          final target = position.pixels + correction;
-          if (target < 0) {
-            correction -= target;
+          final target = position.pixels + correction * direction;
+          if (target < minScrollExtent) {
+            correction -= (target - minScrollExtent) * direction;
           } else if (target > maxScrollExtent) {
-            correction -= target - maxScrollExtent;
+            correction -= (target - maxScrollExtent) * direction;
           }
 
           if (correction.abs() > precisionErrorTolerance) {

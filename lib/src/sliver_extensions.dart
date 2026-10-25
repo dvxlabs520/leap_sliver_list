@@ -162,6 +162,24 @@ extension RenderViewportExt on RenderAbstractViewport {
       }
     }
 
+    // RenderViewport.getOffsetToReveal ignores the viewport anchor: with
+    // anchor the zero scroll offset is located anchor * extent from the
+    // leading edge of the viewport, so the target needs to be scrolled
+    // further to end up at the requested alignment.
+    final self = this;
+    if (self is RenderViewport && self.anchor != 0.0) {
+      final anchorShift =
+          self.anchor *
+          switch (self.axis) {
+            Axis.vertical => self.size.height,
+            Axis.horizontal => self.size.width,
+          };
+      result = RevealedOffset(
+        offset: result.offset + anchorShift,
+        rect: shiftRect(result.rect, -anchorShift),
+      );
+    }
+
     if (obstruction.leading > 0) {
       final offset = obstruction.leading * (1.0 - alignment);
       result = RevealedOffset(
