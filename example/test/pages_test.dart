@@ -1,7 +1,6 @@
+import "package:example/app.dart";
 import "package:flutter/material.dart";
 import "package:flutter_test/flutter_test.dart";
-
-import "package:example/app.dart";
 
 Future<void> _pumpApp(WidgetTester tester) async {
   tester.view.physicalSize = const Size(1200, 900);
@@ -51,6 +50,25 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text("#60"), findsOneWidget);
     expect(find.text("#-1"), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets("sections keep the header and align items below it", (
+    tester,
+  ) async {
+    await _pumpApp(tester);
+    await _openPage(tester, "Sections");
+    expect(find.byKey(const ValueKey("header-0")), findsOneWidget);
+
+    await tester.tap(find.text("Jump"));
+    await tester.pumpAndSettle();
+    // Section 6, item 15 is centered in the area below the sticky header.
+    expect(find.text("Section 6, item 15"), findsOneWidget);
+    final header = tester.getRect(find.byKey(const ValueKey("header-6")));
+    final item = tester.getRect(find.text("Section 6, item 15"));
+    expect(header.top, lessThan(item.top));
+    final viewport = tester.getRect(find.byType(Scrollable).last);
+    expect(item.center.dy, closeTo(viewport.center.dy + 22, 40));
     expect(tester.takeException(), isNull);
   });
 

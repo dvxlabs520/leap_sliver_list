@@ -2,6 +2,7 @@ import "package:flutter/material.dart";
 
 import "pages/big_list_page.dart";
 import "pages/chat_page.dart";
+import "pages/sections_page.dart";
 
 class _Destination {
   const _Destination(this.title, this.icon, this.builder);
@@ -21,6 +22,11 @@ final _destinations = <_Destination>[
     "Chat",
     Icons.chat_bubble_outline,
     (_) => const ChatPage(),
+  ),
+  _Destination(
+    "Sections",
+    Icons.vertical_split_outlined,
+    (_) => const SectionsPage(),
   ),
 ];
 
