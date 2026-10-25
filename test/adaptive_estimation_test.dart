@@ -135,9 +135,6 @@ void main() {
       if (finder.evaluate().isEmpty) {
         continue;
       }
-      print(
-        'step $step d=${before - tester.getTopLeft(finder).dy} off=${controller.offset - offsetBefore}',
-      );
       expect(
         before - tester.getTopLeft(finder).dy,
         moreOrLessEquals(controller.offset - offsetBefore, epsilon: 0.01),
