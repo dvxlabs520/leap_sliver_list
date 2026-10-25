@@ -1,5 +1,6 @@
 import "package:flutter/material.dart";
 
+import "pages/anchoring_page.dart";
 import "pages/big_list_page.dart";
 import "pages/chat_page.dart";
 import "pages/sections_page.dart";
@@ -27,6 +28,11 @@ final _destinations = <_Destination>[
     "Sections",
     Icons.vertical_split_outlined,
     (_) => const SectionsPage(),
+  ),
+  _Destination(
+    "Anchoring",
+    Icons.anchor,
+    (_) => const AnchoringPage(),
   ),
 ];
 

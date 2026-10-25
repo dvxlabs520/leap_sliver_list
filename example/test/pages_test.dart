@@ -72,6 +72,27 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets("anchoring keeps visible items in place", (tester) async {
+    for (final anchoring in [true, false]) {
+      await tester.pumpWidget(const SizedBox());
+      await _pumpApp(tester);
+      await _openPage(tester, "Anchoring");
+      if (!anchoring) {
+        await tester.tap(find.text("Scroll anchoring"));
+        await tester.pumpAndSettle();
+      }
+      final before = tester.getTopLeft(find.text("Item 100")).dy;
+      await tester.tap(find.text("Expand 2 items above the view"));
+      await tester.pumpAndSettle();
+      final after = tester.getTopLeft(find.text("Item 100")).dy;
+      if (anchoring) {
+        expect(after, closeTo(before, 0.5));
+      } else {
+        expect(after - before, greaterThan(100));
+      }
+    }
+  });
+
   testWidgets("theme can be switched", (tester) async {
     await _pumpApp(tester);
     await tester.tap(find.byTooltip("Dark theme"));
