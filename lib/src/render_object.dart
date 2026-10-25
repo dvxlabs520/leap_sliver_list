@@ -1343,6 +1343,18 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
       extent: _extentManager.getExtent(index),
     );
     final viewport = getViewport()!;
+    // Flutter's RenderSliverMainAxisGroup subtracts the extent of pinned
+    // headers in front of the list from the offset, as if the item was
+    // aligned to the leading edge. Correct that for other alignments so the
+    // item is aligned within the part of the viewport that is not covered by
+    // the header.
+    if (rect == null && alignment != 0.0) {
+      obstruction = withAlignmentOffset(
+        obstruction,
+        alignment,
+        -_groupPinnedExtent() * alignment,
+      );
+    }
     return viewport
         .getOffsetToRevealExt(
           renderObject,
@@ -1352,6 +1364,27 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
           extraObstruction: obstruction,
         )
         .offset;
+  }
+
+  /// Extent of the pinned slivers (such as headers) that precede this sliver
+  /// inside [RenderSliverMainAxisGroup] ancestors.
+  double _groupPinnedExtent() {
+    var result = 0.0;
+    RenderSliver child = this;
+    var parent = this.parent;
+    while (parent is RenderSliver) {
+      if (parent is RenderSliverMainAxisGroup &&
+          child.constraints.growthDirection == GrowthDirection.forward) {
+        RenderSliver? current = parent.firstChild;
+        while (current != null && current != child) {
+          result += current.geometry?.maxScrollObstructionExtent ?? 0.0;
+          current = parent.childAfter(current);
+        }
+      }
+      child = parent;
+      parent = parent.parent;
+    }
+    return result;
   }
 
   @override
