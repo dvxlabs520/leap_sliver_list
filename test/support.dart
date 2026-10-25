@@ -55,6 +55,8 @@ Widget buildSingleList({
   bool precise = true,
   bool reverse = false,
   bool scrollAnchoring = true,
+  ItemPosition? initialItem,
+  bool stickToEnd = false,
   Widget Function(int index)? itemBuilder,
 }) {
   Widget item(int i) => itemBuilder?.call(i) ?? tile(i, height(i));
@@ -71,6 +73,8 @@ Widget buildSingleList({
             if (separated)
               SuperSliverList.separated(
                 listController: listController,
+                initialItem: initialItem,
+                stickToEnd: stickToEnd,
                 extentPrecalculationPolicy: precise ? PreciseExtents() : null,
                 itemCount: itemCount,
                 itemBuilder: (_, i) => item(i),
@@ -81,6 +85,8 @@ Widget buildSingleList({
               SuperSliverList.builder(
                 listController: listController,
                 scrollAnchoring: scrollAnchoring,
+                initialItem: initialItem,
+                stickToEnd: stickToEnd,
                 extentPrecalculationPolicy: precise ? PreciseExtents() : null,
                 itemCount: itemCount,
                 itemBuilder: (_, i) => item(i),

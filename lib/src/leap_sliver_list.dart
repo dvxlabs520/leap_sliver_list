@@ -515,6 +515,26 @@ class ListController extends ChangeNotifier {
   }
 }
 
+/// Position of an item within the viewport: the item is aligned like in
+/// [ListController.jumpToItem].
+class ItemPosition {
+  const ItemPosition({
+    required this.index,
+    this.alignment = 0.0,
+    this.alignmentOffset = 0.0,
+  });
+
+  /// Index of the item (items only, separators are not counted).
+  final int index;
+
+  /// 0.0 aligns the item to the leading edge of the viewport, 0.5 to the
+  /// middle and 1.0 to the trailing edge.
+  final double alignment;
+
+  /// Additional shift in logical pixels towards the trailing edge.
+  final double alignmentOffset;
+}
+
 /// Result of [ListController.snapTarget].
 class ItemSnapTarget {
   const ItemSnapTarget({required this.index, required this.offset});
@@ -633,6 +653,8 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
     this.extentEstimation,
     this.delayPopulatingCacheArea = true,
     this.layoutKeptAliveChildren = false,
+    this.stickToEnd = false,
+    this.initialItem,
     this.scrollAnchoring = true,
     this.listControllerIndexesItems = false,
   });
@@ -650,6 +672,8 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
     this.extentEstimation,
     this.delayPopulatingCacheArea = true,
     this.layoutKeptAliveChildren = false,
+    this.stickToEnd = false,
+    this.initialItem,
     this.scrollAnchoring = true,
     bool addAutomaticKeepAlives = true,
     bool addRepaintBoundaries = true,
@@ -680,6 +704,8 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
     this.extentEstimation,
     this.delayPopulatingCacheArea = true,
     this.layoutKeptAliveChildren = false,
+    this.stickToEnd = false,
+    this.initialItem,
     this.scrollAnchoring = true,
     this.listControllerIndexesItems = true,
     int? itemCount,
@@ -728,6 +754,8 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
     this.extentEstimation,
     this.delayPopulatingCacheArea = true,
     this.layoutKeptAliveChildren = false,
+    this.stickToEnd = false,
+    this.initialItem,
     this.scrollAnchoring = true,
     bool addAutomaticKeepAlives = true,
     bool addRepaintBoundaries = true,
@@ -787,6 +815,12 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
   /// maintained and proper paint transform is applied.
   final bool layoutKeptAliveChildren;
 
+  /// Keeps the end of the list in view: when the list grows (or its last item gets taller) while its end was visible, the scroll position follows the new end, as chat apps do. When the user scrolled away from the end the position is left alone. For reversed chat lists (newest item at index 0) use [ListController.addItem] with preserveScrollPosition instead.
+  final bool stickToEnd;
+
+  /// Item that is scrolled into view when the list first gets items, before the first frame is painted (no flash of the top of the list). Only applied once; ignored if the scroll position is not at 0 at that moment, for example because of a restored scroll offset. The list uses the same alignment as [ListController.jumpToItem].
+  final ItemPosition? initialItem;
+
   /// Whether the list keeps the visible content in place when the extent of an item above it changes, for example because an image finished loading or a tile expanded. Similar to CSS scroll anchoring. The first fully visible item is the anchor.
   final bool scrollAnchoring;
 
@@ -807,6 +841,8 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
       delayPopulatingCacheArea: delayPopulatingCacheArea,
       layoutKeptAliveChildren: layoutKeptAliveChildren,
       scrollAnchoring: scrollAnchoring,
+      initialItem: initialItem,
+      stickToEnd: stickToEnd,
     );
   }
 
@@ -822,6 +858,8 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
         extentEstimation ?? _defaultEstimateExtent;
     renderSliverList.delayPopulatingCacheArea = delayPopulatingCacheArea;
     renderSliverList.layoutKeptAliveChildren = layoutKeptAliveChildren;
+    renderSliverList.stickToEnd = stickToEnd;
+    renderSliverList.initialItem = initialItem;
     renderSliverList.scrollAnchoring = scrollAnchoring;
   }
 }

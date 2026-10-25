@@ -42,6 +42,8 @@ class SuperListView extends BoxScrollView {
     this.extentEstimation,
     this.extentPrecalculationPolicy,
     this.delayPopulatingCacheArea = false,
+    this.stickToEnd = false,
+    this.initialItem,
     this.scrollAnchoring = true,
   }) : listControllerIndexesItems = false,
        childrenDelegate = SliverChildListDelegate(
@@ -90,6 +92,8 @@ class SuperListView extends BoxScrollView {
     this.extentEstimation,
     this.extentPrecalculationPolicy,
     this.delayPopulatingCacheArea = false,
+    this.stickToEnd = false,
+    this.initialItem,
     this.scrollAnchoring = true,
   }) : listControllerIndexesItems = false,
        assert(itemCount == null || itemCount >= 0),
@@ -142,6 +146,8 @@ class SuperListView extends BoxScrollView {
     this.extentEstimation,
     this.extentPrecalculationPolicy,
     this.delayPopulatingCacheArea = false,
+    this.stickToEnd = false,
+    this.initialItem,
     this.scrollAnchoring = true,
     this.listControllerIndexesItems = true,
   }) : assert(itemCount >= 0),
@@ -197,6 +203,8 @@ class SuperListView extends BoxScrollView {
     this.extentEstimation,
     this.extentPrecalculationPolicy,
     this.delayPopulatingCacheArea = false,
+    this.stickToEnd = false,
+    this.initialItem,
     this.scrollAnchoring = true,
     this.listControllerIndexesItems = false,
   });
@@ -240,6 +248,12 @@ class SuperListView extends BoxScrollView {
   /// are only built after the scrolling slows down.
   final bool delayPopulatingCacheArea;
 
+  /// Keeps the end of the list in view: when the list grows (or its last item gets taller) while its end was visible, the scroll position follows the new end, as chat apps do. When the user scrolled away from the end the position is left alone. For reversed chat lists (newest item at index 0) use [ListController.addItem] with preserveScrollPosition instead.
+  final bool stickToEnd;
+
+  /// Item that is scrolled into view when the list first gets items, before the first frame is painted (no flash of the top of the list). Only applied once; ignored if the scroll position is not at 0 at that moment, for example because of a restored scroll offset. The list uses the same alignment as [ListController.jumpToItem].
+  final ItemPosition? initialItem;
+
   /// Whether the list keeps the visible content in place when the extent of an item above it changes, for example because an image finished loading or a tile expanded. Similar to CSS scroll anchoring. The first fully visible item is the anchor.
   final bool scrollAnchoring;
 
@@ -250,6 +264,8 @@ class SuperListView extends BoxScrollView {
       listController: listController,
       listControllerIndexesItems: listControllerIndexesItems,
       delayPopulatingCacheArea: delayPopulatingCacheArea,
+      stickToEnd: stickToEnd,
+      initialItem: initialItem,
       scrollAnchoring: scrollAnchoring,
       extentEstimation: extentEstimation,
       extentPrecalculationPolicy: extentPrecalculationPolicy,

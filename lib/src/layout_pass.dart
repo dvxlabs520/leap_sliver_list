@@ -21,7 +21,7 @@ class LayoutPass {
   bool isNew = true;
 
   final List<RenderSuperSliverList> slivers;
-  final double initialScrollPosition;
+  double initialScrollPosition;
   final bool childScrollOffsetEstimation;
   final RenderSuperSliverList? sliverWithOffsetEstimation;
 

@@ -1,3 +1,5 @@
+import "dart:math" as math;
+
 import "package:flutter/foundation.dart";
 import "package:flutter/material.dart";
 import "package:flutter/rendering.dart";
@@ -23,9 +25,13 @@ class _ChildScrollOffsetEstimation {
     required this.extent,
     required this.precedingScrollExtent,
     required this.revealingRect,
+    this.isInitialItem = false,
     required this.alignment,
     required this.childObstructionExtent,
   });
+
+  /// Whether this estimation was made for [initialItem].
+  final bool isInitialItem;
 
   /// Index of child for which the offset was estimated.
   final int index;
@@ -65,6 +71,8 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
     required this.estimateExtent,
     required this.delayPopulatingCacheArea,
     required this.layoutKeptAliveChildren,
+    this.stickToEnd = false,
+    required this.initialItem,
     this.scrollAnchoring = true,
   }) {
     this.extentPrecalculationPolicy = extentPrecalculationPolicy;
@@ -87,6 +95,8 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
   ExtentEstimationProvider estimateExtent;
   bool delayPopulatingCacheArea;
   bool layoutKeptAliveChildren = false;
+  bool stickToEnd;
+  ItemPosition? initialItem;
   bool scrollAnchoring;
 
   bool _shouldPrecalculateExtents(LayoutPass pass) {
@@ -559,6 +569,20 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
       return;
     }
 
+    // Scroll to the initial item before anything is built around the top of
+    // the list, so there is no flash of the first items.
+    final initialCorrection = _initialItemCorrection(layoutPass);
+    if (initialCorrection.abs() > precisionErrorTolerance) {
+      _log.fine(
+        "Scroll offset correction: ${initialCorrection.format()} "
+        "(reason: initial item)",
+      );
+      layoutPass.initialScrollPosition += initialCorrection;
+      geometry = SliverGeometry(scrollOffsetCorrection: initialCorrection);
+      childManager.didFinishLayout();
+      return;
+    }
+
     // This is also the last extent that this sliver list reported.
     final initialExtent = _totalExtent();
 
@@ -947,8 +971,23 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
           // Growing a sliver after the center moves the maximum, growing a
           // sliver before the center moves the minimum (in the opposite
           // direction).
-          var minScrollExtent = position.minScrollExtent;
-          var maxScrollExtent = position.maxScrollExtent;
+          // Before the first layout of the viewport there are no content
+          // dimensions yet, use the extent of this list.
+          // The same applies to the initial item, when the dimensions that the
+          // position knows about are from before the list had items.
+          final knownDimensions =
+              position.hasContentDimensions && !estimation.isInitialItem;
+          var minScrollExtent = knownDimensions
+              ? position.minScrollExtent
+              : 0.0;
+          var maxScrollExtent = knownDimensions
+              ? position.maxScrollExtent
+              : math.max(
+                  0.0,
+                  constraints.precedingScrollExtent +
+                      initialExtent -
+                      constraints.viewportMainAxisExtent,
+                );
           final extentChange =
               _totalExtent() -
               initialExtent +
@@ -1084,6 +1123,61 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
     }
 
     childManager.didFinishLayout();
+  }
+
+  bool _initialItemApplied = false;
+
+  /// Returns the scroll offset correction that moves [initialItem] into view
+  /// the first time the list has items, or 0.
+  double _initialItemCorrection(LayoutPass layoutPass) {
+    final item = initialItem;
+    if (item == null ||
+        _initialItemApplied ||
+        childManager.childCount == 0 ||
+        constraints.viewportMainAxisExtent <= 0) {
+      return 0.0;
+    }
+    _initialItemApplied = true;
+    final viewport = getViewport();
+    if (viewport == null ||
+        viewport.offset.pixels != 0.0 ||
+        constraints.growthDirection != GrowthDirection.forward) {
+      return 0.0;
+    }
+    final childIndex = _extentManager.separated ? item.index * 2 : item.index;
+    if (item.index < 0 || childIndex >= childManager.childCount) {
+      return 0.0;
+    }
+    final extent = _extentManager.getExtent(childIndex);
+    final preceding = constraints.precedingScrollExtent;
+    var target =
+        preceding +
+        _extentManager.offsetForIndex(childIndex) -
+        item.alignment * (constraints.viewportMainAxisExtent - extent) -
+        item.alignmentOffset;
+    // Stay within the scroll extent (assuming nothing follows this list).
+    final maxTarget = math.max(
+      0.0,
+      preceding + _totalExtent() - constraints.viewportMainAxisExtent,
+    );
+    target = target.clamp(0.0, maxTarget);
+    if (target == 0.0) {
+      return 0.0;
+    }
+    _childScrollOffsetEstimation = _ChildScrollOffsetEstimation(
+      index: childIndex,
+      offset: _extentManager.offsetForIndex(childIndex),
+      extent: extent,
+      precedingScrollExtent: preceding,
+      revealingRect: false,
+      isInitialItem: true,
+      alignment: item.alignment,
+      childObstructionExtent: const ChildObstructionExtent(
+        leading: 0,
+        trailing: 0,
+      ),
+    )..viewportScrollOffset = target;
+    return target;
   }
 
   RenderBox? _firstWholeVisibleChild() {
