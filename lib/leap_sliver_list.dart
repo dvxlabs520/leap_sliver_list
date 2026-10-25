@@ -1,5 +1,6 @@
 export "src/animate_to_item.dart" show ItemAnimation;
 export "src/extent_manager.dart" show ItemTypeOf;
+export "src/grid.dart";
 export "src/layout_budget.dart";
 export "src/leap_sliver_list.dart";
 export "src/list_view.dart";

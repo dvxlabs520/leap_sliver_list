@@ -22,6 +22,7 @@ void main() {
     double Function(int)? height,
     double width = 300,
     double viewport = 500,
+    bool precise = true,
   }) {
     Widget item(BuildContext _, int i) => SizedBox(
       key: ValueKey<int>(i),
@@ -45,7 +46,7 @@ void main() {
                   itemCount: itemCount,
                   mainAxisSpacing: mainAxisSpacing,
                   crossAxisSpacing: crossAxisSpacing,
-                  extentPrecalculationPolicy: PreciseExtents(),
+                  extentPrecalculationPolicy: precise ? PreciseExtents() : null,
                   itemBuilder: item,
                 )
               else
@@ -55,7 +56,7 @@ void main() {
                   itemCount: itemCount,
                   mainAxisSpacing: mainAxisSpacing,
                   crossAxisSpacing: crossAxisSpacing,
-                  extentPrecalculationPolicy: PreciseExtents(),
+                  extentPrecalculationPolicy: precise ? PreciseExtents() : null,
                   itemBuilder: item,
                 ),
             ],
@@ -100,7 +101,7 @@ void main() {
       build(scroll: scroll, mainAxisSpacing: 8, crossAxisSpacing: 10),
     );
     // (300 - 2 * 10) / 3 = 93.33 px per column.
-    final width = 280 / 3;
+    const width = 280 / 3;
     expect(rectOf(tester, 0).width, closeTo(width, 0.001));
     expect(rectOf(tester, 1).left, closeTo(width + 10, 0.001));
     expect(rectOf(tester, 2).left, closeTo(2 * (width + 10), 0.001));
@@ -134,7 +135,12 @@ void main() {
     addTearDown(scroll.dispose);
     await pumpList(
       tester,
-      build(scroll: scroll, itemCount: 30000, crossAxisCount: 3),
+      build(
+        scroll: scroll,
+        itemCount: 30000,
+        crossAxisCount: 3,
+        precise: false,
+      ),
     );
     expect(find.byType(SizedBox).evaluate().length, lessThan(100));
     scroll.jumpTo(100000);
@@ -182,8 +188,8 @@ void main() {
     controller.jumpToItem(index: 200, scrollController: scroll, alignment: 1.0);
     await tester.pump();
     // Row 66 ends at the bottom of the viewport.
-    expect(rectOf(tester, 200).bottom, closeTo(500 - 0, 70));
-    expect(rectOf(tester, 198).bottom, closeTo(500, 0.01));
+    expect(rectOf(tester, 200).bottom, closeTo(500, 0.01));
+    expect(rectOf(tester, 198).bottom, closeTo(480, 0.01));
   });
 
   testWidgets("animateToItem scrolls to the row of the item", (tester) async {
@@ -248,6 +254,40 @@ void main() {
     controller.jumpToItem(index: 11, scrollController: scroll, alignment: 0.0);
     await tester.pump();
     expect(controller.lastVisibleIndex, 11);
+  });
+
+  testWidgets("changing the number of columns forgets measured extents", (
+    tester,
+  ) async {
+    final scroll = ScrollController();
+    final controller = GridController();
+    addTearDown(scroll.dispose);
+    addTearDown(controller.dispose);
+    Widget grid(int columns) => build(
+      scroll: scroll,
+      controller: controller,
+      itemCount: 3000,
+      crossAxisCount: columns,
+      precise: false,
+    );
+    await pumpList(tester, grid(3));
+    for (var i = 0; i < 20; ++i) {
+      scroll.jumpTo(scroll.offset + 450);
+      await tester.pump();
+    }
+    final measured =
+        controller.rows.numberOfItems -
+        controller.rows.numberOfItemsWithEstimatedExtent;
+    expect(measured, greaterThan(20));
+
+    await pumpList(tester, grid(2));
+    await tester.pump();
+    // Only rows around the viewport have a measured extent again.
+    final measuredNow =
+        controller.rows.numberOfItems -
+        controller.rows.numberOfItemsWithEstimatedExtent;
+    expect(controller.rows.numberOfItems, 1500);
+    expect(measuredNow, lessThan(30));
   });
 
   testWidgets("works with sticky headers", (tester) async {
