@@ -42,6 +42,7 @@ class SuperListView extends BoxScrollView {
     this.extentEstimation,
     this.extentPrecalculationPolicy,
     this.delayPopulatingCacheArea = false,
+    this.scrollAnchoring = true,
   }) : listControllerIndexesItems = false,
        childrenDelegate = SliverChildListDelegate(
          children,
@@ -89,6 +90,7 @@ class SuperListView extends BoxScrollView {
     this.extentEstimation,
     this.extentPrecalculationPolicy,
     this.delayPopulatingCacheArea = false,
+    this.scrollAnchoring = true,
   }) : listControllerIndexesItems = false,
        assert(itemCount == null || itemCount >= 0),
        assert(semanticChildCount == null || semanticChildCount <= itemCount!),
@@ -140,6 +142,7 @@ class SuperListView extends BoxScrollView {
     this.extentEstimation,
     this.extentPrecalculationPolicy,
     this.delayPopulatingCacheArea = false,
+    this.scrollAnchoring = true,
     this.listControllerIndexesItems = true,
   }) : assert(itemCount >= 0),
        childrenDelegate = SliverChildBuilderDelegate(
@@ -194,6 +197,7 @@ class SuperListView extends BoxScrollView {
     this.extentEstimation,
     this.extentPrecalculationPolicy,
     this.delayPopulatingCacheArea = false,
+    this.scrollAnchoring = true,
     this.listControllerIndexesItems = false,
   });
 
@@ -236,6 +240,9 @@ class SuperListView extends BoxScrollView {
   /// are only built after the scrolling slows down.
   final bool delayPopulatingCacheArea;
 
+  /// Whether the list keeps the visible content in place when the extent of an item above it changes, for example because an image finished loading or a tile expanded. Similar to CSS scroll anchoring. The first fully visible item is the anchor.
+  final bool scrollAnchoring;
+
   @override
   Widget buildChildLayout(BuildContext context) {
     return SuperSliverList(
@@ -243,6 +250,7 @@ class SuperListView extends BoxScrollView {
       listController: listController,
       listControllerIndexesItems: listControllerIndexesItems,
       delayPopulatingCacheArea: delayPopulatingCacheArea,
+      scrollAnchoring: scrollAnchoring,
       extentEstimation: extentEstimation,
       extentPrecalculationPolicy: extentPrecalculationPolicy,
     );

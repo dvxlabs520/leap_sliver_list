@@ -558,6 +558,7 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
     this.extentEstimation,
     this.delayPopulatingCacheArea = true,
     this.layoutKeptAliveChildren = false,
+    this.scrollAnchoring = true,
     this.listControllerIndexesItems = false,
   });
 
@@ -574,6 +575,7 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
     this.extentEstimation,
     this.delayPopulatingCacheArea = true,
     this.layoutKeptAliveChildren = false,
+    this.scrollAnchoring = true,
     bool addAutomaticKeepAlives = true,
     bool addRepaintBoundaries = true,
     bool addSemanticIndexes = true,
@@ -603,6 +605,7 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
     this.extentEstimation,
     this.delayPopulatingCacheArea = true,
     this.layoutKeptAliveChildren = false,
+    this.scrollAnchoring = true,
     this.listControllerIndexesItems = true,
     int? itemCount,
     bool addAutomaticKeepAlives = true,
@@ -650,6 +653,7 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
     this.extentEstimation,
     this.delayPopulatingCacheArea = true,
     this.layoutKeptAliveChildren = false,
+    this.scrollAnchoring = true,
     bool addAutomaticKeepAlives = true,
     bool addRepaintBoundaries = true,
     bool addSemanticIndexes = true,
@@ -708,6 +712,9 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
   /// maintained and proper paint transform is applied.
   final bool layoutKeptAliveChildren;
 
+  /// Whether the list keeps the visible content in place when the extent of an item above it changes, for example because an image finished loading or a tile expanded. Similar to CSS scroll anchoring. The first fully visible item is the anchor.
+  final bool scrollAnchoring;
+
   static SuperSliverListLayoutBudget layoutBudget =
       _TimeSuperSliverListLayoutBudget(budget: const Duration(milliseconds: 3));
 
@@ -724,6 +731,7 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
       estimateExtent: extentEstimation ?? _defaultEstimateExtent,
       delayPopulatingCacheArea: delayPopulatingCacheArea,
       layoutKeptAliveChildren: layoutKeptAliveChildren,
+      scrollAnchoring: scrollAnchoring,
     );
   }
 
@@ -739,6 +747,7 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
         extentEstimation ?? _defaultEstimateExtent;
     renderSliverList.delayPopulatingCacheArea = delayPopulatingCacheArea;
     renderSliverList.layoutKeptAliveChildren = layoutKeptAliveChildren;
+    renderSliverList.scrollAnchoring = scrollAnchoring;
   }
 }
 

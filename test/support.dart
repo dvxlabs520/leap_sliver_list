@@ -54,6 +54,7 @@ Widget buildSingleList({
   double separatorHeight = 10,
   bool precise = true,
   bool reverse = false,
+  bool scrollAnchoring = true,
   Widget Function(int index)? itemBuilder,
 }) {
   Widget item(int i) => itemBuilder?.call(i) ?? tile(i, height(i));
@@ -79,6 +80,7 @@ Widget buildSingleList({
             else
               SuperSliverList.builder(
                 listController: listController,
+                scrollAnchoring: scrollAnchoring,
                 extentPrecalculationPolicy: precise ? PreciseExtents() : null,
                 itemCount: itemCount,
                 itemBuilder: (_, i) => item(i),

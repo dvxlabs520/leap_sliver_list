@@ -65,6 +65,7 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
     required this.estimateExtent,
     required this.delayPopulatingCacheArea,
     required this.layoutKeptAliveChildren,
+    this.scrollAnchoring = true,
   }) {
     this.extentPrecalculationPolicy = extentPrecalculationPolicy;
   }
@@ -86,6 +87,7 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
   ExtentEstimationProvider estimateExtent;
   bool delayPopulatingCacheArea;
   bool layoutKeptAliveChildren = false;
+  bool scrollAnchoring;
 
   bool _shouldPrecalculateExtents(LayoutPass pass) {
     final state = pass.getLayoutState(this);
@@ -780,9 +782,10 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
 
     double scrollCorrection = 0; // Accumulated scroll offset correction.
 
-    // When cross axis is resized, try preserving the first visible leading edge of
-    // a child.
-    if (crossAxisResizing &&
+    // When cross axis is resized, or the extent of an item before the first
+    // visible one changed (scroll anchoring), try preserving the first visible
+    // leading edge of a child.
+    if ((crossAxisResizing || scrollAnchoring) &&
         !anchoredAtEnd &&
         firstVisible != null &&
         firstVisible.parent == this) {
