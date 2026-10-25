@@ -90,6 +90,7 @@ class ListController extends ChangeNotifier {
     required int index,
     required ScrollController scrollController,
     required double alignment,
+    double alignmentOffset = 0.0,
     Rect? rect,
     ChildObstructionExtent? obstruction,
   }) {
@@ -100,6 +101,7 @@ class ListController extends ChangeNotifier {
     final offset = getOffsetToReveal(
       index,
       alignment,
+      alignmentOffset: alignmentOffset,
       rect: rect,
       obstruction: obstruction,
     );
@@ -152,6 +154,7 @@ class ListController extends ChangeNotifier {
     required double alignment,
     required Duration Function(double estimatedDistance) duration,
     required Curve Function(double estimatedDistance) curve,
+    double alignmentOffset = 0.0,
     Rect? rect,
     ChildObstructionExtent? obstruction,
   }) {
@@ -169,7 +172,11 @@ class ListController extends ChangeNotifier {
         },
         alignment: alignment,
         rect: rect,
-        obstruction: obstruction,
+        obstruction: withAlignmentOffset(
+          obstruction,
+          alignment,
+          alignmentOffset,
+        ),
         position: position,
         curve: curve,
         duration: duration,
@@ -440,6 +447,7 @@ class ListController extends ChangeNotifier {
   double getOffsetToReveal(
     int index,
     double alignment, {
+    double alignmentOffset = 0.0,
     Rect? rect,
     ChildObstructionExtent? obstruction,
   }) {
@@ -448,7 +456,7 @@ class ListController extends ChangeNotifier {
       _childIndex(index),
       alignment,
       rect: rect,
-      obstruction: obstruction,
+      obstruction: withAlignmentOffset(obstruction, alignment, alignmentOffset),
       estimationOnly: false,
     );
   }

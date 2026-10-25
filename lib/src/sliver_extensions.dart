@@ -205,14 +205,14 @@ extension RenderViewportExt on RenderAbstractViewport {
       );
     }
 
-    if (obstruction.leading > 0) {
+    if (obstruction.leading != 0) {
       final offset = obstruction.leading * (1.0 - alignment);
       result = RevealedOffset(
         offset: result.offset - offset,
         rect: shiftRect(result.rect, offset),
       );
     }
-    if (obstruction.trailing > 0) {
+    if (obstruction.trailing != 0) {
       final offset = obstruction.trailing * alignment;
       result = RevealedOffset(
         offset: result.offset + offset,
@@ -224,6 +224,34 @@ extension RenderViewportExt on RenderAbstractViewport {
     }
     return result;
   }
+}
+
+/// Combines [obstruction] with a pixel shift of the aligned item.
+///
+/// With alignment `a`, leading obstruction `l` and trailing obstruction `t`
+/// the leading edge of the item sits at `a * (viewport - item) + l * (1 - a) -
+/// t * a`. A shift of [alignmentOffset] pixels towards the trailing edge is
+/// therefore the same as a leading obstruction of `offset / (1 - a)` (for
+/// `a < 0.5`) or a trailing obstruction of `-offset / a` (otherwise). Negative
+/// values are valid.
+ChildObstructionExtent? withAlignmentOffset(
+  ChildObstructionExtent? obstruction,
+  double alignment,
+  double alignmentOffset,
+) {
+  if (alignmentOffset == 0.0) {
+    return obstruction;
+  }
+  final shift = alignment < 0.5
+      ? ChildObstructionExtent(
+          leading: alignmentOffset / (1.0 - alignment),
+          trailing: 0,
+        )
+      : ChildObstructionExtent(
+          leading: 0,
+          trailing: -alignmentOffset / alignment,
+        );
+  return obstruction == null ? shift : obstruction + shift;
 }
 
 class _SliverGeometryWithChildObstructionExtent extends SliverGeometry {
