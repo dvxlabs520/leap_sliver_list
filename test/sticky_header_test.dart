@@ -83,17 +83,19 @@ void main() {
     scroll.jumpTo(300);
     await tester.pump();
     expect(top(tester, "Header 0"), 0);
-    // Section 0 is 1050 px long, section 1 starts at 1050.
-    scroll.jumpTo(1030);
+    // Section 0 is 1050 px long, section 1 starts at 1050. The next header
+    // pushes the previous one out.
+    scroll.jumpTo(1000);
     await tester.pump();
     expect(top(tester, "Header 0"), 0);
+    expect(top(tester, "Header 1"), 50);
+    scroll.jumpTo(1030);
+    await tester.pump();
+    expect(top(tester, "Header 0"), -30);
     expect(top(tester, "Header 1"), 20);
     scroll.jumpTo(1070);
     await tester.pump();
-    expect(top(tester, "Header 0"), -20);
     expect(top(tester, "Header 1"), 0);
-    scroll.jumpTo(1200);
-    await tester.pump();
     expect(find.text("Header 0"), findsNothing);
     expect(top(tester, "Header 1"), 0);
   });
