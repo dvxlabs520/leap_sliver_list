@@ -6,7 +6,8 @@ A Material 3 demo of the package, with a light/dark/system theme switch.
 | --- | --- |
 | Big list | 10,000 items of different heights: `jumpToItem`, `animateToItem`, cancel, alignment, pixel offset, `ItemSnapScrollPhysics`, adaptive estimation. |
 | Chat | `stickToEnd`, adding messages below, and older messages above with `addItem(..., preserveScrollPosition: true)`. |
-| Sections | `SuperStickyHeader` with 12 sections, and scrolling to an item below the header with any alignment. |
+| Sections | `SuperStickyHeader` with 12 sections, the pinned section from `StickyHeaderController`, `SuperStickyFooter` per section, and scrolling to an item between header and footer with any alignment. |
+| Grid | `SuperSliverGrid` with 10,000 cards of different heights, 2 to 6 columns, jump and animate to an item, visible range from `GridController`. |
 | Anchoring | Items that grow above the viewport, with `scrollAnchoring` on and off. |
 | Compare | `SliverList` and `SuperSliverList` side by side with a frame time meter, auto scroll and a jump to item 7500. |
 

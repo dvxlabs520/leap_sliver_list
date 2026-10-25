@@ -10,14 +10,19 @@ New features. All changes are backwards compatible (additions only).
 * `alignmentOffset` on `jumpToItem`, `animateToItem` and `getOffsetToReveal`: pixel-precise alignment on top of `alignment`.
 * `ItemSnapScrollPhysics` and `ListController.snapTarget`: settle with an item aligned.
 * `adaptiveEstimation` (opt-in): the estimate for items that were not measured follows the measured average, so the scroll extent and scrollbar converge faster.
+* `StickyHeaderController` (a `ValueListenable<int?>`) with `controller` and `index` on `SuperStickyHeader`: tells which header is pinned ([upstream #56](https://github.com/superlistapp/super_sliver_list/issues/56)). Notifies after the frame, only on change. The header is exposed as a semantics header.
+* `SuperStickyFooter`: a footer that sticks to the trailing edge of the viewport while its sliver scrolls; `jumpToItem`, `animateToItem` and `getOffsetToReveal` keep the item clear of it.
+* `itemTypeOf` (opt-in, implies `adaptiveEstimation`) on `SuperSliverList` and `SuperListView`: the estimate of an unmeasured item is the average of the measured items of the same kind.
+* `SuperSliverGrid` (`.builder` with `crossAxisCount`, `.extent` with `maxCrossAxisExtent`) and `GridController` (`jumpToItem`, `animateToItem`, `visibleRange` with item indexes). Minimal version: vertical, rows as tall as their tallest item, no masonry. See the README for the limits.
 * `SuperStickyHeader`: native sticky header built from `SliverMainAxisGroup` and `PinnedHeaderSliver`; the `ListController` methods align items below it. For alignments other than 0 the offset Flutter's group computes leaves the item partly outside the viewport, this is corrected.
 
 ### Other
 
-* Example app rewritten as a Material 3 demo (big list, chat, sections with sticky headers, anchoring, `SliverList` comparison with frame time meter, light/dark theme) with widget tests.
+* Example app rewritten as a Material 3 demo (big list, chat, sections with sticky headers, footers and the pinned section, grid, anchoring, `SliverList` comparison with frame time meter, light/dark theme) with widget tests.
 * The example deploy workflow now has `contents: write` permission and commits as the repository owner.
+* `benchmark/estimation_benchmark.dart` compares the estimators; the README has the figures of three passes and the environment.
+* The adaptive estimation test that checked that visible items stay in place did not fail when the correction was removed; it now does (verified by mutation).
 * New widget tests for each feature, plus semantics tests that guard parity with `ListView` (scroll child count and item indexes).
-* Not done: a getter for the active sticky header ([upstream #56](https://github.com/superlistapp/super_sliver_list/issues/56)), sectioned list helper, an estimator per item kind, grid.
 
 ## 0.5.0
 

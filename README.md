@@ -215,7 +215,37 @@ CustomScrollView(slivers: [
 ])
 ```
 
-`jumpToItem`, `animateToItem` and `getOffsetToReveal` align the item within the part of the viewport that the header does not cover, for any `alignment`, so do not pass an `obstruction` for it. Only headers at the leading edge are supported. Headers from other packages (such as `flutter_sticky_header`) still work with the `obstruction` parameter as described above. Not included: a getter for the currently active section.
+`jumpToItem`, `animateToItem` and `getOffsetToReveal` align the item within the part of the viewport that the header does not cover, for any `alignment`, so do not pass an `obstruction` for it. Only headers at the leading edge are supported. Headers from other packages (such as `flutter_sticky_header`) still work with the `obstruction` parameter as described above.
+
+#### Which header is pinned
+
+Give the headers a `StickyHeaderController` and each its `index` to learn which section is the pinned one ([upstream #56](https://github.com/superlistapp/super_sliver_list/issues/56)). It is a `ValueListenable<int?>`:
+
+```dart
+final sticky = StickyHeaderController();
+
+SuperStickyHeader(controller: sticky, index: section.id, /*...*/)
+
+ValueListenableBuilder<int?>(
+  valueListenable: sticky,
+  builder: (context, active, _) => Text("Section $active"),
+)
+```
+
+The value is the `index` of the last header that reached the leading edge (the lowest attached index before that, `null` without headers). Listeners run after the frame in which it changed, never during layout, and only on change. Only sections that are built are known, so with a section that was scrolled far away the value follows the sections near the viewport. The header is exposed to accessibility services as a header (`Semantics(header: true)`).
+
+#### Sticky footers
+
+`SuperStickyFooter` is the trailing edge counterpart: the footer stays at the bottom of the viewport while its list is scrolling, and rests right after the last item when the end of the list is in view. It works with any axis direction and with `SuperStickyHeader` in the same `CustomScrollView`:
+
+```dart
+SuperStickyFooter(
+  footer: SectionFooter(section),
+  sliver: SuperSliverList.builder(/*...*/),
+)
+```
+
+`jumpToItem`, `animateToItem` and `getOffsetToReveal` keep the item clear of the footer too. The footer is painted and hit tested above the list. The wrapped sliver must grow forward (the default `GrowthDirection.forward`), which is checked by an assert.
 
 ## Advanced
 
@@ -240,7 +270,42 @@ With the default estimate (100 px) a list of 200 px items reports a scroll exten
 SuperListView.builder(adaptiveEstimation: true, /*...*/)
 ```
 
-The extent (and with it the scrollbar thumb size and jumps to far away items) converges while scrolling; the visible items do not move when the estimate is updated. Updates happen when the number of measured items doubles, so the cost stays linear. It is off by default, and ignored when `extentEstimation` is given. There is no estimator per kind of item (header, image, text) yet.
+The extent (and with it the scrollbar thumb size and jumps to far away items) converges while scrolling; the visible items do not move when the estimate is updated. Updates happen when the number of measured items doubles, so the cost stays linear. It is off by default, and ignored when `extentEstimation` is given.
+
+### Estimation per kind of item
+
+When rows come in very different sizes (text, image cards, ads) one average per list is a poor estimate. `itemTypeOf` returns the kind of each item, and every kind gets the average of the measured items of that kind (opt-in, it implies `adaptiveEstimation`):
+
+```dart
+SuperListView.builder(
+  itemTypeOf: (index) => feed[index].runtimeType,
+  /*...*/
+)
+```
+
+A kind that was not measured yet falls back to the global average. The averages are recomputed when the number of measured items doubles, which calls `itemTypeOf` once for each measured item at that point (keep it cheap). It is ignored when `extentEstimation` is given. With separated lists the index is the index of the item. See the numbers in the benchmark below, the estimator is exact on lists whose kinds have a fixed height and it helps less when the extent varies a lot inside a kind.
+
+### Grid
+
+`SuperSliverGrid` lays out items in a fixed number of columns (or columns of a maximum width) inside a sliver. The rows have the height of their tallest item, so the heights can vary from row to row, and jump and animate work with item indexes through a `GridController`:
+
+```dart
+final grid = GridController();
+
+SuperSliverGrid.builder(
+  controller: grid,
+  crossAxisCount: 3, // or SuperSliverGrid.extent(maxCrossAxisExtent: 200, ...)
+  itemCount: 10000,
+  mainAxisSpacing: 8,
+  crossAxisSpacing: 8,
+  itemBuilder: (context, index) => Card(/*...*/),
+)
+
+grid.jumpToItem(index: 5000, scrollController: scrollController, alignment: 0);
+grid.visibleRange; // (first item, last item) of the visible rows
+```
+
+It is a minimal version, built on a `SuperSliverList` of rows (also available as `grid.rows`). Limits: vertical scrolling only, items are top aligned and take the width of their column (they are not stretched to the height of the row), there is no masonry layout (items are not moved to the shortest column), and the columns are not animated when they change. `adaptiveEstimation`, `itemTypeOf` (it receives the index of a row, not of an item) and `scrollAnchoring` are passed to the rows.
 
 ### Precalculate extents for items
 
@@ -276,23 +341,39 @@ See the [example](example) folder for a complete sample app using `SuperSliverLi
 flutter test benchmark/layout_benchmark.dart
 ```
 
-It runs in the headless `flutter_tester` (debug/JIT, CPU only), so use it to compare implementations and versions on the same machine, not as device numbers. Tune it with `--dart-define=ITEMS=100000`, `FRAMES` and `RUNS`.
+It runs in the headless `flutter_tester` (debug/JIT, software rendering, CPU only), so use it to compare implementations and versions on the same machine, not as device numbers. Tune it with `--dart-define=ITEMS=100000`, `FRAMES` and `RUNS`.
 
-Reference run (Linux, 8 cores, Flutter 3.47.8, per-frame time of `pump`):
+Environment of the figures below: Linux virtual machine, Intel Xeon (8 vCPU), Flutter 3.47.8 (Dart VM test runner, no device, no browser), 10,000 items, 300 frames x 5 runs, three consecutive passes on an idle machine (2026-10-26). Per-frame time of `pump`, mean / p95 in ms, one value per pass:
 
 | Scenario | SliverList | SuperSliverList |
 |----------|-----------|-----------------|
-| scroll 120 px/frame, mean / p95 | 1.78 / 3.43 ms | 1.28 / 1.83 ms |
-| scroll 5000 px/frame, mean / p95 | 4.24 / 9.23 ms | 1.19 / 2.35 ms |
-| `jumpToItem` to a random item and settle, mean | not available | 4.92 ms |
+| scroll 120 px/frame | 1.81 / 3.55, 1.67 / 3.23, 1.72 / 3.32 | 1.50 / 2.16, 1.44 / 2.17, 1.32 / 1.96 |
+| scroll 5000 px/frame | 4.50 / 10.01, 4.28 / 9.52, 4.24 / 9.09 | 1.26 / 2.66, 1.31 / 2.38, 1.14 / 2.09 |
+| `jumpToItem` to a random item and settle | not available | 5.08 / 7.87, 5.44 / 8.31, 5.00 / 6.72 |
+
+To check for regressions the same three passes were run on the previous release commit (`d551644`, before sticky footer, grid and per-type estimation) on the same machine in alternation. `SuperSliverList` scroll 120 px/frame: mean 1.28, 1.31, 1.34 ms before and 1.50, 1.44, 1.32 ms now; 5000 px/frame: 1.15, 1.39, 1.14 before and 1.26, 1.31, 1.14 now; `jumpToItem`: 4.83, 5.92, 4.82 before and 5.08, 5.44, 5.00 now. The `SliverList` control moved by a similar amount between passes (1.64 to 1.81 ms), so the differences are within the noise of this machine; the code path of a plain list is unchanged.
+
+`benchmark/estimation_benchmark.dart` compares the extent estimators on 10,000 items, after scrolling 40 screens (600 px) from the top. "feed" is a mix of text rows, cards and ads; "shifted" starts with small rows and continues with mostly cards, so the first measured items do not describe the rest. The error and movement figures are deterministic (identical in the three passes); frame time is the median frame, three passes:
+
+| List | Estimator | Error of the total extent | Scrollbar back-and-forth | Median frame (ms) |
+|------|-----------|--------------------------|--------------------------|-------------------|
+| feed | default (100 px) | 20.2 % | 0 px | 5.85, 6.13, 6.42 |
+| feed | `adaptiveEstimation` | 0.4 % | 387,281 px | 4.58, 5.09, 5.02 |
+| feed | `itemTypeOf` | 0.0 % | 51,429 px | 3.95, 4.82, 4.36 |
+| shifted | default (100 px) | 53.9 % | 3,920 px | 4.43, 4.56, 4.42 |
+| shifted | `adaptiveEstimation` | 59.1 % | 223,256 px | 3.96, 4.03, 4.04 |
+| shifted | `itemTypeOf` | 0.0 % | 0 px | 3.34, 3.95, 3.57 |
+
+"Scrollbar back-and-forth" is how many pixels the total extent moved up and down on the way (movement beyond the net change), so a lower value means a steadier scrollbar thumb. The default estimator never moves back and down but it is simply wrong (20 % and 54 % off at the end). `adaptiveEstimation` is closer on the feed but moves the total a lot while it learns, and on the shifted list it is worse than the default because it learns from the small rows. Per kind estimation is the best of the three on these two lists, but it needs the kind of each item and the benchmark heights are fixed per kind; with heights that vary inside a kind the error will not be zero. The frame time differences between estimators (about 1 ms) are small compared to the run to run variation, so they are not a claim about speed.
 
 ## Roadmap
 
-Ideas that are not done yet:
+Not done yet:
 
-* A getter for the active sticky header, a sectioned list helper, and sticky headers at the trailing edge.
-* An estimator per kind of item, and a better scrollbar for huge lists.
-* A multi-column (grid) variant.
+* A sectioned list helper, and sticky headers or footers for slivers that grow in reverse.
+* Grid: masonry layout (shortest column first), items stretched to the row height, horizontal scrolling, a SliverGrid style delegate.
+* An estimator with a moving window for lists whose kinds change height along the list, and a better scrollbar for huge lists.
+* Accessibility: headers are exposed as headers and the scroll children match `ListView`; the footer and the grid have no extra semantics beyond their children. Not tested with a screen reader.
 * Integration tests on devices, and benchmarks on web/wasm. Only the Dart VM test runner and the web build are verified today; iOS and Android are not.
 
 ## Attribution
