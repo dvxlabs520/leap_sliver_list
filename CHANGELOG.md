@@ -1,3 +1,30 @@
+## 0.5.0
+
+Bug fixes and new API. All changes are backwards compatible (additions only; `animateToItem` now returns an `ItemAnimation` instead of `void`).
+
+### Fixes
+
+* `jumpToItem` / `animateToItem` / `getOffsetToReveal` land on the right item with `SuperSliverList.separated` and `SuperListView.separated` ([upstream #83](https://github.com/superlistapp/super_sliver_list/issues/83)). The controller now indexes items (not items plus separators) when `listControllerIndexesItems` is true, which is the default for the `.separated` constructors.
+* `jumpToItem` / `animateToItem` work with a custom `center` and `anchor` of the viewport ([upstream #59](https://github.com/superlistapp/super_sliver_list/issues/59)), including slivers placed before the center (reverse growth direction).
+* Negative or out of range `alignment` values behave consistently ([upstream #84](https://github.com/superlistapp/super_sliver_list/issues/84)); covered by regression tests.
+* Lists inside a `SliverStickyHeader` (and other pinned parents) can be jumped/animated to: `getOffsetToReveal` no longer returns an infinite offset, and the new `obstruction` parameter keeps the target item clear of the header ([upstream #85](https://github.com/superlistapp/super_sliver_list/issues/85)).
+* `animateToItem` rework: no leaked animation controllers or ticker listeners, cancellation when the user drags, when another animation or jump starts, when the index getter returns `null` or when the list is disposed ([upstream #76](https://github.com/superlistapp/super_sliver_list/pull/76), [#92](https://github.com/superlistapp/super_sliver_list/pull/92), [#93](https://github.com/superlistapp/super_sliver_list/pull/93), [#97](https://github.com/superlistapp/super_sliver_list/pull/97); issues [#82](https://github.com/superlistapp/super_sliver_list/issues/82), [#86](https://github.com/superlistapp/super_sliver_list/issues/86)).
+
+### New API
+
+* `ListController.animateToItem` returns an `ItemAnimation`: a `Future<void>` that completes when the animation ends, with `isCompleted`, `isCanceled` and `cancel()` ([upstream #86](https://github.com/superlistapp/super_sliver_list/issues/86)).
+* `ListController.offsetForIndex(index)` ([upstream #95](https://github.com/superlistapp/super_sliver_list/pull/95)) and a public `ListController.getOffsetToReveal(index, alignment, {rect, obstruction})` ([upstream #99](https://github.com/superlistapp/super_sliver_list/pull/99)).
+* `ListController.firstVisibleIndex` / `lastVisibleIndex` ([upstream #62](https://github.com/superlistapp/super_sliver_list/issues/62)).
+* `ListController.addItem(index, {count, preserveScrollPosition})`: keep the content in place when items are inserted above the viewport (prepending to a chat/feed) ([upstream #71](https://github.com/superlistapp/super_sliver_list/issues/71)).
+* `ChildObstructionExtent` parameter (`obstruction`) on `jumpToItem`, `animateToItem` and `getOffsetToReveal`.
+* `SuperSliverList.listControllerIndexesItems` (and the same flag on `SuperListView` constructors).
+
+### Other
+
+* Reproducible benchmark in `benchmark/layout_benchmark.dart`.
+* Many new widget tests (79 in total).
+* Not addressed: initial scroll position ([upstream #58](https://github.com/superlistapp/super_sliver_list/issues/58)); use `ScrollController.initialScrollOffset` or call `jumpToItem` after the first frame.
+
 ## 0.5.0-dev
 
 * Fork of [`super_sliver_list` 0.4.1](https://github.com/superlistapp/super_sliver_list) (upstream commit `bfa3d5d`), now maintained as `leap_sliver_list`.

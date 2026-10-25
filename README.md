@@ -87,7 +87,7 @@ class _MyState extends State<MyWidget> {
 
   void animateToItem(int index) {
     _listController.animateToItem(
-      index: index,
+      index: () => index,
       scrollController: _scrollController,
       alignment: 0.5,
       // You can provide duration and curve depending on the estimated
@@ -98,6 +98,60 @@ class _MyState extends State<MyWidget> {
   }
 }
 ```
+
+### Awaiting and canceling animations
+
+`animateToItem` returns an `ItemAnimation`, a `Future<void>` that completes when the animation is over. It never completes with an error: check `isCanceled` to know whether the item was reached.
+
+```dart
+final animation = _listController.animateToItem(
+  index: () => 500,
+  scrollController: _scrollController,
+  alignment: 0.5,
+  duration: (_) => const Duration(milliseconds: 400),
+  curve: (_) => Curves.easeInOut,
+);
+await animation;
+if (animation.isCanceled) {
+  // The user scrolled, another animation started, ...
+}
+animation.cancel(); // stops at the current position
+```
+
+### Separated lists
+
+With `SuperSliverList.separated` / `SuperListView.separated`, `ListController` indexes your items, not the separators, so `jumpToItem(index: 10, ...)` shows item 10. Pass `listControllerIndexesItems: false` to get the raw child indexes instead.
+
+### Offsets, visible items and `center`/`anchor`
+
+```dart
+_listController.offsetForIndex(42);                 // scroll offset of item 42
+_listController.getOffsetToReveal(42, 0.5);         // offset that aligns it to the middle
+_listController.firstVisibleIndex;                  // int?
+_listController.lastVisibleIndex;                   // int?
+```
+
+`jumpToItem`, `animateToItem` and `getOffsetToReveal` honor a custom `center` and `anchor` of the viewport and accept an `obstruction` (`ChildObstructionExtent`) for space covered by something the list does not know about, such as a `SliverStickyHeader` (from `flutter_sticky_header`) wrapping the list:
+
+```dart
+_listController.jumpToItem(
+  index: 10,
+  scrollController: _scrollController,
+  alignment: 0.0,
+  obstruction: const ChildObstructionExtent(leading: 56, trailing: 0),
+);
+```
+
+### Inserting items above the viewport
+
+Tell the controller about the insertion and the visible content stays where it is (useful for chats and feeds that prepend older messages):
+
+```dart
+setState(() => messages.insertAll(0, olderMessages));
+_listController.addItem(0, count: olderMessages.length, preserveScrollPosition: true);
+```
+
+The scroll position is compensated exactly for up to 256 inserted items that are not built yet; for larger insertions the estimated extents are used.
 
 ## Advanced
 
@@ -140,15 +194,32 @@ The threshold is arbitrary, but in general there are diminishing returns for pre
 
 See the [example](example) folder for a complete sample app using `SuperSliverList`.
 
+## Benchmark
+
+`benchmark/layout_benchmark.dart` compares `SliverList` and `SuperSliverList` (10,000 items with variable heights) and times `jumpToItem`:
+
+```
+flutter test benchmark/layout_benchmark.dart
+```
+
+It runs in the headless `flutter_tester` (debug/JIT, CPU only), so use it to compare implementations and versions on the same machine, not as device numbers. Tune it with `--dart-define=ITEMS=100000`, `FRAMES` and `RUNS`.
+
+Reference run (Linux, 8 cores, Flutter 3.47.8, per-frame time of `pump`):
+
+| Scenario | SliverList | SuperSliverList |
+|----------|-----------|-----------------|
+| scroll 120 px/frame, mean / p95 | 1.78 / 3.43 ms | 1.28 / 1.83 ms |
+| scroll 5000 px/frame, mean / p95 | 4.24 / 9.23 ms | 1.19 / 2.35 ms |
+| `jumpToItem` to a random item and settle, mean | not available | 4.92 ms |
+
 ## Roadmap
 
-Planned for the next releases (see also the issue tracker):
+Ideas that are not done yet:
 
-* Fix `jumpToItem` landing at the wrong offset with `.separated` constructors (upstream #83).
-* Fix `center`/`anchor` handling in the viewport (upstream #59).
-* Rework `animateToItem` (cancellation, awaitable future, leaks; upstream #76, #82, #92, #93, #97, #86).
-* Expose `getOffsetToReveal` / offset-for-index helpers (upstream #95, #99).
-* Reproducible performance benchmarks (web/wasm).
+* Initial scroll position without a post-frame jump (upstream #58, #69).
+* Scroll anchoring when the height of an item above the viewport changes.
+* Native sticky headers and a multi-column variant.
+* Integration tests on devices, and benchmarks on web/wasm. Only the Dart VM test runner and the web build are verified today; iOS and Android are not.
 
 ## Attribution
 
