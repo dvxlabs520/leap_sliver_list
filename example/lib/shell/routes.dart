@@ -1,5 +1,6 @@
 import "package:flutter/material.dart";
 
+import "../examples/chat_sections.dart";
 import "../examples/item_list.dart";
 import "../examples/long_document.dart";
 import "example_page.dart";
@@ -60,5 +61,10 @@ final allRoutes = [
     fullPath: "/example/long-document",
     title: "Long document",
     builder: (key) => LongDocumentPage(key: key),
+  ),
+  Route(
+    fullPath: "/example/chat-sections",
+    title: "Chat and sections",
+    builder: (key) => ChatSectionsPage(key: key),
   ),
 ];
