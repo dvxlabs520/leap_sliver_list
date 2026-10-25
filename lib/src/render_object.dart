@@ -76,9 +76,11 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
     this.stickToEnd = false,
     required this.initialItem,
     this.scrollAnchoring = true,
+    ItemTypeOf? itemTypeOf,
   }) {
     this.extentPrecalculationPolicy = extentPrecalculationPolicy;
     this.adaptiveEstimation = adaptiveEstimation;
+    this.itemTypeOf = itemTypeOf;
   }
 
   @override
@@ -101,6 +103,11 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
   bool get adaptiveEstimation => _extentManager.adaptiveEstimation;
   set adaptiveEstimation(bool value) {
     _extentManager.adaptiveEstimation = value;
+  }
+
+  ItemTypeOf? get itemTypeOf => _extentManager.itemTypeOf;
+  set itemTypeOf(ItemTypeOf? value) {
+    _extentManager.itemTypeOf = value;
   }
 
   bool stickToEnd;

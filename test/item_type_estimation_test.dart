@@ -31,8 +31,9 @@ void main() {
     bool separated = false,
     bool scrollAnchoring = true,
     int itemCount = count,
+    double Function(int)? height,
   }) {
-    Widget item(int i) => tile(i, heightOf(i));
+    Widget item(int i) => tile(i, (height ?? heightOf)(i));
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Center(
@@ -99,7 +100,10 @@ void main() {
       ),
     );
     await scrollThrough(tester, scroll, 1500);
-    return (list.totalExtent - trueTotal()).abs() / trueTotal();
+    final error = (list.totalExtent - trueTotal()).abs() / trueTotal();
+    // Unmount so that the next run starts from scratch.
+    await tester.pumpWidget(const SizedBox());
+    return error;
   }
 
   testWidgets("per type estimate beats the plain average", (tester) async {
@@ -135,7 +139,9 @@ void main() {
     expect((list.totalExtent - expected).abs() / expected, lessThan(0.02));
   });
 
-  testWidgets("offsets stay consistent while estimates change", (tester) async {
+  testWidgets("keeps visible items in place while estimates change", (
+    tester,
+  ) async {
     final scroll = ScrollController();
     final list = ListController();
     addTearDown(scroll.dispose);
@@ -147,26 +153,45 @@ void main() {
         list: list,
         itemTypeOf: typeOf,
         scrollAnchoring: false,
+        // The extents vary within a type, so the estimates keep changing.
+        height: (i) => heightOf(i) + (i * 7919 % 13) * 6,
       ),
     );
+    // Items above the viewport were never measured.
+    scroll.jumpTo(20000);
+    await tester.pumpAndSettle();
+    final initialMax = scroll.position.maxScrollExtent;
     final top = tester.getTopLeft(find.byType(CustomScrollView)).dy;
-    for (var step = 0; step < 40; ++step) {
-      scroll.jumpTo(scroll.offset + 300);
+    final keyed = find.byWidgetPredicate((w) => w.key is ValueKey<int>);
+    for (var step = 0; step < 150; ++step) {
+      final item = keyed.evaluate().first.widget.key!;
+      final before = tester.getTopLeft(find.byKey(item)).dy;
+      scroll.jumpTo(scroll.offset + 120);
       await tester.pump();
-      for (final element in find.byType(SizedBox).evaluate()) {
-        final key = element.widget.key;
-        if (key is! ValueKey<int>) {
-          continue;
-        }
-        final box = element.renderObject! as RenderBox;
-        final dy = box.localToGlobal(Offset.zero).dy - top;
+      // Wherever the estimates are, every built item sits at the offset the
+      // list reports for it.
+      for (final element in keyed.evaluate()) {
+        final index = (element.widget.key! as ValueKey<int>).value;
         expect(
-          dy,
-          closeTo(list.offsetForIndex(key.value) - scroll.offset, 0.01),
-          reason: "step $step item ${key.value}",
+          tester.getTopLeft(find.byWidget(element.widget)).dy - top,
+          moreOrLessEquals(
+            list.offsetForIndex(index) - scroll.offset,
+            epsilon: 0.01,
+          ),
+          reason: "step $step, item $index",
         );
       }
+      final finder = find.byKey(item);
+      if (finder.evaluate().isEmpty) {
+        continue;
+      }
+      expect(
+        before - tester.getTopLeft(finder).dy,
+        moreOrLessEquals(120, epsilon: 0.01),
+        reason: "step $step",
+      );
     }
+    expect(scroll.position.maxScrollExtent, isNot(initialMax));
   });
 
   testWidgets("items inserted later use the estimate of their type", (

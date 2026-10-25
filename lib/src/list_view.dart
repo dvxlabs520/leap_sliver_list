@@ -3,6 +3,7 @@ import "dart:math" as math;
 import "package:flutter/rendering.dart" show ScrollCacheExtent;
 import "package:flutter/widgets.dart";
 
+import "extent_manager.dart" show ItemTypeOf;
 import "leap_sliver_list.dart";
 
 /// This is a drop-in replacement Flutter [ListView] that provides much better
@@ -46,6 +47,7 @@ class SuperListView extends BoxScrollView {
     this.stickToEnd = false,
     this.initialItem,
     this.scrollAnchoring = true,
+    this.itemTypeOf,
   }) : listControllerIndexesItems = false,
        childrenDelegate = SliverChildListDelegate(
          children,
@@ -97,6 +99,7 @@ class SuperListView extends BoxScrollView {
     this.stickToEnd = false,
     this.initialItem,
     this.scrollAnchoring = true,
+    this.itemTypeOf,
   }) : listControllerIndexesItems = false,
        assert(itemCount == null || itemCount >= 0),
        assert(semanticChildCount == null || semanticChildCount <= itemCount!),
@@ -152,6 +155,7 @@ class SuperListView extends BoxScrollView {
     this.stickToEnd = false,
     this.initialItem,
     this.scrollAnchoring = true,
+    this.itemTypeOf,
     this.listControllerIndexesItems = true,
   }) : assert(itemCount >= 0),
        childrenDelegate = SliverChildBuilderDelegate(
@@ -210,6 +214,7 @@ class SuperListView extends BoxScrollView {
     this.stickToEnd = false,
     this.initialItem,
     this.scrollAnchoring = true,
+    this.itemTypeOf,
     this.listControllerIndexesItems = false,
   });
 
@@ -264,6 +269,9 @@ class SuperListView extends BoxScrollView {
   /// Whether the list keeps the visible content in place when the extent of an item above it changes, for example because an image finished loading or a tile expanded. Similar to CSS scroll anchoring. The first fully visible item is the anchor.
   final bool scrollAnchoring;
 
+  /// Returns the kind of the item at an index, for example `(i) => items[i].runtimeType`. When set, the extent of items that were not measured yet is estimated with the average extent of the measured items of the same kind, which is much closer when the list mixes very different rows. It implies [adaptiveEstimation] and is ignored when [extentEstimation] is set. It is called for every item each time the estimates are recomputed (the number of measured items has doubled), so it must be cheap. Defaults to `null` (all items are estimated alike).
+  final ItemTypeOf? itemTypeOf;
+
   @override
   Widget buildChildLayout(BuildContext context) {
     return SuperSliverList(
@@ -275,6 +283,7 @@ class SuperListView extends BoxScrollView {
       stickToEnd: stickToEnd,
       initialItem: initialItem,
       scrollAnchoring: scrollAnchoring,
+      itemTypeOf: itemTypeOf,
       extentEstimation: extentEstimation,
       extentPrecalculationPolicy: extentPrecalculationPolicy,
     );

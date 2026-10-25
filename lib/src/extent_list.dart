@@ -344,6 +344,32 @@ class ExtentList {
     _fenwickTree = null;
   }
 
+  /// Calls [visit] with the index and extent of every measured item.
+  void forEachMeasured(void Function(int index, double extent) visit) {
+    for (var i = 0; i < _extents.length; ++i) {
+      if (!_dirty[i]) {
+        visit(i, _extents[i]);
+      }
+    }
+  }
+
+  /// Replaces the extent of all items that were not measured yet with the
+  /// value returned by [extentFor].
+  void reestimateDirtyWith(double Function(int index) extentFor) {
+    if (_dirtyCount == 0) {
+      return;
+    }
+    var total = 0.0;
+    for (var i = 0; i < _extents.length; ++i) {
+      if (_dirty[i]) {
+        _extents[i] = extentFor(i);
+      }
+      total += _extents[i];
+    }
+    _totalExtent = total;
+    _fenwickTree = null;
+  }
+
   FenwickTree _getOrBuildFenwickTree() {
     _fenwickTree ??= FenwickTree.fromList(list: _extents._list);
     return _fenwickTree!;

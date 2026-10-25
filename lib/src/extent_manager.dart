@@ -6,6 +6,10 @@ import "package:flutter/foundation.dart";
 import "extent_list.dart";
 import "sliver_extensions.dart";
 
+/// Returns the kind of the item at the given index, see
+/// [SuperSliverList.itemTypeOf].
+typedef ItemTypeOf = Object Function(int index);
+
 abstract class ExtentManagerDelegate {
   const ExtentManagerDelegate();
 
@@ -32,12 +36,46 @@ class ExtentManager with ChangeNotifier {
   /// average of the items measured so far, instead of the delegate estimate.
   bool adaptiveEstimation = false;
 
+  /// Returns the kind of the item at the given index. When set (together with
+  /// [adaptiveEstimation]), items that were not measured yet are estimated
+  /// with the average of the measured items of the same kind.
+  ItemTypeOf? get itemTypeOf => _itemTypeOf;
+  set itemTypeOf(ItemTypeOf? value) {
+    if ((value == null) != (_itemTypeOf == null)) {
+      _typeEstimates.clear();
+      _lastReestimateCount = 0;
+    }
+    _itemTypeOf = value;
+  }
+
+  ItemTypeOf? _itemTypeOf;
+
   double? _adaptiveEstimate;
   int _lastReestimateCount = 0;
+
+  // Average extent of the measured items of each type.
+  final _typeEstimates = <Object, double>{};
+
+  static const _separatorType = Object();
+
+  /// Type of the child at [index]. The manager works with child indices,
+  /// while [itemTypeOf] works with item indices.
+  Object _typeOfChild(int index) {
+    if (separated) {
+      return index.isOdd ? _separatorType : _itemTypeOf!(index ~/ 2);
+    }
+    return _itemTypeOf!(index);
+  }
 
   double _estimateForItem(int? index) {
     final adaptive = _adaptiveEstimate;
     if (adaptiveEstimation && adaptive != null) {
+      if (_itemTypeOf != null && _typeEstimates.isNotEmpty) {
+        // The estimate depends on the item, see ExtentList.resize.
+        return index == null
+            ? 0.0
+            : _typeEstimates[_typeOfChild(index)] ?? adaptive;
+      }
       return adaptive;
     }
     return delegate.estimateExtentForItem(index);
@@ -65,6 +103,9 @@ class ExtentManager with ChangeNotifier {
     _lastReestimateCount = count;
     final average = _extentList.averageMeasuredExtent!;
     final current = _adaptiveEstimate ?? delegate.estimateExtentForItem(null);
+    if (_itemTypeOf != null) {
+      return _reestimateByType(index, average, current);
+    }
     if (average <= 0 ||
         (average - current).abs() <= current * _reestimationThreshold) {
       return 0.0;
@@ -74,6 +115,49 @@ class ExtentManager with ChangeNotifier {
         : 0.0;
     _adaptiveEstimate = average;
     _extentList.reestimateDirty(average);
+    _isModified = true;
+    final after = index < _extentList.length
+        ? _extentList.offsetForIndex(index)
+        : 0.0;
+    return after - before;
+  }
+
+  double _reestimateByType(int index, double average, double current) {
+    final sums = <Object, double>{};
+    final counts = <Object, int>{};
+    _extentList.forEachMeasured((i, extent) {
+      final type = _typeOfChild(i);
+      sums[type] = (sums[type] ?? 0.0) + extent;
+      counts[type] = (counts[type] ?? 0) + 1;
+    });
+    final estimates = <Object, double>{
+      for (final type in sums.keys) type: sums[type]! / counts[type]!,
+    };
+    var changed = false;
+    for (final entry in estimates.entries) {
+      final previous = _typeEstimates[entry.key] ?? current;
+      if (entry.value > 0 &&
+          (entry.value - previous).abs() > previous * _reestimationThreshold) {
+        changed = true;
+        break;
+      }
+    }
+    if (!changed || average <= 0) {
+      return 0.0;
+    }
+    final before = index < _extentList.length
+        ? _extentList.offsetForIndex(index)
+        : 0.0;
+    _typeEstimates
+      ..clear()
+      ..addAll({
+        for (final entry in estimates.entries)
+          if (entry.value > 0) entry.key: entry.value,
+      });
+    _adaptiveEstimate = average;
+    _extentList.reestimateDirtyWith(
+      (i) => _typeEstimates[_typeOfChild(i)] ?? average,
+    );
     _isModified = true;
     final after = index < _extentList.length
         ? _extentList.offsetForIndex(index)

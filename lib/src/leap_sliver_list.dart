@@ -657,6 +657,7 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
     this.stickToEnd = false,
     this.initialItem,
     this.scrollAnchoring = true,
+    this.itemTypeOf,
     this.listControllerIndexesItems = false,
   });
 
@@ -677,6 +678,7 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
     this.stickToEnd = false,
     this.initialItem,
     this.scrollAnchoring = true,
+    this.itemTypeOf,
     bool addAutomaticKeepAlives = true,
     bool addRepaintBoundaries = true,
     bool addSemanticIndexes = true,
@@ -710,6 +712,7 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
     this.stickToEnd = false,
     this.initialItem,
     this.scrollAnchoring = true,
+    this.itemTypeOf,
     this.listControllerIndexesItems = true,
     int? itemCount,
     bool addAutomaticKeepAlives = true,
@@ -761,6 +764,7 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
     this.stickToEnd = false,
     this.initialItem,
     this.scrollAnchoring = true,
+    this.itemTypeOf,
     bool addAutomaticKeepAlives = true,
     bool addRepaintBoundaries = true,
     bool addSemanticIndexes = true,
@@ -831,6 +835,9 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
   /// Whether the list keeps the visible content in place when the extent of an item above it changes, for example because an image finished loading or a tile expanded. Similar to CSS scroll anchoring. The first fully visible item is the anchor.
   final bool scrollAnchoring;
 
+  /// Returns the kind of the item at an index, for example `(i) => items[i].runtimeType`. When set, the extent of items that were not measured yet is estimated with the average extent of the measured items of the same kind, which is much closer when the list mixes very different rows. It implies [adaptiveEstimation] and is ignored when [extentEstimation] is set. It is called for every item each time the estimates are recomputed (the number of measured items has doubled), so it must be cheap. Defaults to `null` (all items are estimated alike).
+  final ItemTypeOf? itemTypeOf;
+
   static SuperSliverListLayoutBudget layoutBudget =
       _TimeSuperSliverListLayoutBudget(budget: const Duration(milliseconds: 3));
 
@@ -848,7 +855,10 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
       delayPopulatingCacheArea: delayPopulatingCacheArea,
       layoutKeptAliveChildren: layoutKeptAliveChildren,
       scrollAnchoring: scrollAnchoring,
-      adaptiveEstimation: adaptiveEstimation && extentEstimation == null,
+      adaptiveEstimation:
+          (adaptiveEstimation || itemTypeOf != null) &&
+          extentEstimation == null,
+      itemTypeOf: extentEstimation == null ? itemTypeOf : null,
       initialItem: initialItem,
       stickToEnd: stickToEnd,
     );
@@ -867,7 +877,8 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
     renderSliverList.delayPopulatingCacheArea = delayPopulatingCacheArea;
     renderSliverList.layoutKeptAliveChildren = layoutKeptAliveChildren;
     renderSliverList.adaptiveEstimation =
-        adaptiveEstimation && extentEstimation == null;
+        (adaptiveEstimation || itemTypeOf != null) && extentEstimation == null;
+    renderSliverList.itemTypeOf = extentEstimation == null ? itemTypeOf : null;
     renderSliverList.stickToEnd = stickToEnd;
     renderSliverList.initialItem = initialItem;
     renderSliverList.scrollAnchoring = scrollAnchoring;
