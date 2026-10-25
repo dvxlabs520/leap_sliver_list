@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#12263F"/>
+  <!-- list rows of varying extent -->
+  <rect x="96" y="272" width="320" height="44" rx="14" fill="#2B4A6F"/>
+  <rect x="96" y="332" width="320" height="76" rx="14" fill="#2B4A6F"/>
+  <rect x="96" y="424" width="320" height="28" rx="14" fill="#2B4A6F"/>
+  <!-- leap arrow -->
+  <path d="M120 232 C 170 92, 340 92, 384 206" fill="none" stroke="#2DD4BF" stroke-width="30" stroke-linecap="round"/>
+  <path d="M338 196 L 392 244 L 410 172 Z" fill="#2DD4BF" stroke="#2DD4BF" stroke-width="12" stroke-linejoin="round"/>
+</svg>

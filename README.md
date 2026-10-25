@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/icon.png" width="128" alt="leap_sliver_list icon"></p>
+
 # leap_sliver_list
 
 SliverList and ListView - supercharged. A maintained fork of [`super_sliver_list`](https://github.com/superlistapp/super_sliver_list).
