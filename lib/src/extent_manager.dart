@@ -53,9 +53,7 @@ class ExtentManager with ChangeNotifier {
   @pragma("vm:prefer-inline")
   double getExtent(int index) => _extentList[index];
 
-  void resize(
-    int newSize,
-  ) {
+  void resize(int newSize) {
     if (newSize == _extentList.length) {
       return;
     }

@@ -2,6 +2,8 @@
 
 * Fork of [`super_sliver_list` 0.4.1](https://github.com/superlistapp/super_sliver_list) (upstream commit `bfa3d5d`), now maintained as `leap_sliver_list`.
 * Package renamed to `leap_sliver_list`; library entry point is now `package:leap_sliver_list/leap_sliver_list.dart`. Public API is otherwise unchanged.
+* Migrated deprecated `cacheExtent` usage to `scrollCacheExtent`. `SuperListView` constructors accept both `cacheExtent` (kept for compatibility) and the new `scrollCacheExtent`. Minimum is now Flutter 3.41 / Dart 3.11.
+* Cleaned up trivial analyzer lints (e.g. `withOpacity`).
 
 ## 0.4.1
 

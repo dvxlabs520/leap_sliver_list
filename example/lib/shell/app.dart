@@ -3,8 +3,8 @@ import "package:flutter/foundation.dart";
 import "package:flutter/material.dart"
     show Colors, Scrollbar, ScrollbarTheme, ScrollbarThemeData, Typography;
 import "package:flutter/services.dart";
-import "package:pixel_snap/widgets.dart";
 import "package:leap_sliver_list/leap_sliver_list.dart";
+import "package:pixel_snap/widgets.dart";
 
 import "../util/media_query.dart";
 import "app_settings.dart";
@@ -256,9 +256,9 @@ class _ScrollBehavior extends ScrollBehavior {
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.hovered) ||
               states.contains(WidgetState.dragged)) {
-            return Colors.black.withOpacity(0.4);
+            return Colors.black.withValues(alpha: 0.4);
           }
-          return Colors.black.withOpacity(0.1);
+          return Colors.black.withValues(alpha: 0.1);
         }),
       ),
       child: MediaQuery(

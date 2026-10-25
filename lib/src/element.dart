@@ -2,8 +2,8 @@ import "package:flutter/rendering.dart";
 import "package:flutter/widgets.dart";
 
 import "extent_manager.dart";
-import "render_object.dart";
 import "leap_sliver_list.dart";
+import "render_object.dart";
 
 abstract class MeasuringRenderSliverBoxChildManager
     extends RenderSliverBoxChildManager {
@@ -126,7 +126,9 @@ class SuperSliverMultiBoxAdaptorElement extends SliverMultiBoxAdaptorElement
 
   @override
   void removeRenderObjectChild(
-      covariant RenderObject child, covariant int slot) {
+    covariant RenderObject child,
+    covariant int slot,
+  ) {
     if (_tempRenderObject == child) {
       // Nothing to do here - most importantly don't call super as it doesn't
       // know about the render object and would throw an assertion.

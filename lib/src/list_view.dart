@@ -1,5 +1,6 @@
 import "dart:math" as math;
 
+import "package:flutter/rendering.dart" show ScrollCacheExtent;
 import "package:flutter/widgets.dart";
 
 import "leap_sliver_list.dart";
@@ -27,7 +28,10 @@ class SuperListView extends BoxScrollView {
     bool addAutomaticKeepAlives = true,
     bool addRepaintBoundaries = true,
     bool addSemanticIndexes = true,
-    super.cacheExtent,
+
+    /// Cache area in logical pixels. Prefer [scrollCacheExtent].
+    double? cacheExtent,
+    ScrollCacheExtent? scrollCacheExtent,
     List<Widget> children = const <Widget>[],
     int? semanticChildCount,
     super.dragStartBehavior,
@@ -38,15 +42,20 @@ class SuperListView extends BoxScrollView {
     this.extentEstimation,
     this.extentPrecalculationPolicy,
     this.delayPopulatingCacheArea = false,
-  })  : childrenDelegate = SliverChildListDelegate(
-          children,
-          addAutomaticKeepAlives: addAutomaticKeepAlives,
-          addRepaintBoundaries: addRepaintBoundaries,
-          addSemanticIndexes: addSemanticIndexes,
-        ),
-        super(
-          semanticChildCount: semanticChildCount ?? children.length,
-        );
+  }) : childrenDelegate = SliverChildListDelegate(
+         children,
+         addAutomaticKeepAlives: addAutomaticKeepAlives,
+         addRepaintBoundaries: addRepaintBoundaries,
+         addSemanticIndexes: addSemanticIndexes,
+       ),
+       super(
+         scrollCacheExtent:
+             scrollCacheExtent ??
+             (cacheExtent != null
+                 ? ScrollCacheExtent.pixels(cacheExtent)
+                 : null),
+         semanticChildCount: semanticChildCount ?? children.length,
+       );
 
   /// Creates a new [SuperListView] that builds its children dynamically.
   ///
@@ -66,7 +75,10 @@ class SuperListView extends BoxScrollView {
     bool addAutomaticKeepAlives = true,
     bool addRepaintBoundaries = true,
     bool addSemanticIndexes = true,
-    super.cacheExtent,
+
+    /// Cache area in logical pixels. Prefer [scrollCacheExtent].
+    double? cacheExtent,
+    ScrollCacheExtent? scrollCacheExtent,
     int? semanticChildCount,
     super.dragStartBehavior,
     super.keyboardDismissBehavior,
@@ -76,19 +88,24 @@ class SuperListView extends BoxScrollView {
     this.extentEstimation,
     this.extentPrecalculationPolicy,
     this.delayPopulatingCacheArea = false,
-  })  : assert(itemCount == null || itemCount >= 0),
-        assert(semanticChildCount == null || semanticChildCount <= itemCount!),
-        childrenDelegate = SliverChildBuilderDelegate(
-          itemBuilder,
-          findChildIndexCallback: findChildIndexCallback,
-          childCount: itemCount,
-          addAutomaticKeepAlives: addAutomaticKeepAlives,
-          addRepaintBoundaries: addRepaintBoundaries,
-          addSemanticIndexes: addSemanticIndexes,
-        ),
-        super(
-          semanticChildCount: semanticChildCount ?? itemCount,
-        );
+  }) : assert(itemCount == null || itemCount >= 0),
+       assert(semanticChildCount == null || semanticChildCount <= itemCount!),
+       childrenDelegate = SliverChildBuilderDelegate(
+         itemBuilder,
+         findChildIndexCallback: findChildIndexCallback,
+         childCount: itemCount,
+         addAutomaticKeepAlives: addAutomaticKeepAlives,
+         addRepaintBoundaries: addRepaintBoundaries,
+         addSemanticIndexes: addSemanticIndexes,
+       ),
+       super(
+         scrollCacheExtent:
+             scrollCacheExtent ??
+             (cacheExtent != null
+                 ? ScrollCacheExtent.pixels(cacheExtent)
+                 : null),
+         semanticChildCount: semanticChildCount ?? itemCount,
+       );
 
   /// Creates a [SuperListView] with "items" separated by list item "separators".
   ///
@@ -109,7 +126,10 @@ class SuperListView extends BoxScrollView {
     bool addAutomaticKeepAlives = true,
     bool addRepaintBoundaries = true,
     bool addSemanticIndexes = true,
-    super.cacheExtent,
+
+    /// Cache area in logical pixels. Prefer [scrollCacheExtent].
+    double? cacheExtent,
+    ScrollCacheExtent? scrollCacheExtent,
     super.dragStartBehavior,
     super.keyboardDismissBehavior,
     super.restorationId,
@@ -118,27 +138,32 @@ class SuperListView extends BoxScrollView {
     this.extentEstimation,
     this.extentPrecalculationPolicy,
     this.delayPopulatingCacheArea = false,
-  })  : assert(itemCount >= 0),
-        childrenDelegate = SliverChildBuilderDelegate(
-          (BuildContext context, int index) {
-            final int itemIndex = index ~/ 2;
-            if (index.isEven) {
-              return itemBuilder(context, itemIndex);
-            }
-            return separatorBuilder(context, itemIndex);
-          },
-          findChildIndexCallback: findChildIndexCallback,
-          childCount: _computeActualChildCount(itemCount),
-          addAutomaticKeepAlives: addAutomaticKeepAlives,
-          addRepaintBoundaries: addRepaintBoundaries,
-          addSemanticIndexes: addSemanticIndexes,
-          semanticIndexCallback: (Widget widget, int index) {
-            return index.isEven ? index ~/ 2 : null;
-          },
-        ),
-        super(
-          semanticChildCount: itemCount,
-        );
+  }) : assert(itemCount >= 0),
+       childrenDelegate = SliverChildBuilderDelegate(
+         (BuildContext context, int index) {
+           final int itemIndex = index ~/ 2;
+           if (index.isEven) {
+             return itemBuilder(context, itemIndex);
+           }
+           return separatorBuilder(context, itemIndex);
+         },
+         findChildIndexCallback: findChildIndexCallback,
+         childCount: _computeActualChildCount(itemCount),
+         addAutomaticKeepAlives: addAutomaticKeepAlives,
+         addRepaintBoundaries: addRepaintBoundaries,
+         addSemanticIndexes: addSemanticIndexes,
+         semanticIndexCallback: (Widget widget, int index) {
+           return index.isEven ? index ~/ 2 : null;
+         },
+       ),
+       super(
+         scrollCacheExtent:
+             scrollCacheExtent ??
+             (cacheExtent != null
+                 ? ScrollCacheExtent.pixels(cacheExtent)
+                 : null),
+         semanticChildCount: itemCount,
+       );
 
   /// Creates [SuperListView] with a custom child model.
   ///
@@ -153,7 +178,10 @@ class SuperListView extends BoxScrollView {
     super.shrinkWrap,
     super.padding,
     required this.childrenDelegate,
+    // Forwarded as-is to keep this constructor `const`.
+    // ignore: deprecated_member_use
     super.cacheExtent,
+    super.scrollCacheExtent,
     super.semanticChildCount,
     super.dragStartBehavior,
     super.keyboardDismissBehavior,
