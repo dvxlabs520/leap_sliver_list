@@ -12,6 +12,7 @@ import "layout_budget.dart";
 import "layout_pass.dart";
 import "leap_sliver_list.dart";
 import "sliver_extensions.dart";
+import "sticky_footer.dart";
 
 final _log = Logger("SuperSliverList");
 
@@ -1355,6 +1356,13 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
         -_groupPinnedExtent() * alignment,
       );
     }
+    final footer = _stickyFooterExtent();
+    if (footer > 0.0) {
+      obstruction =
+          (obstruction ??
+              const ChildObstructionExtent(leading: 0, trailing: 0)) +
+          ChildObstructionExtent(leading: 0, trailing: footer);
+    }
     return viewport
         .getOffsetToRevealExt(
           renderObject,
@@ -1364,6 +1372,24 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
           extraObstruction: obstruction,
         )
         .offset;
+  }
+
+  /// Extent of the [SuperStickyFooter]s that wrap this sliver, which cover the
+  /// trailing edge of the viewport.
+  double _stickyFooterExtent() {
+    var result = 0.0;
+    RenderObject child = this;
+    var parent = this.parent;
+    while (parent is RenderSliver) {
+      if (parent is RenderSliverStickyFooter &&
+          parent.constraints.growthDirection == GrowthDirection.forward &&
+          parent.sliverChild == child) {
+        result += parent.footerExtent;
+      }
+      child = parent;
+      parent = parent.parent;
+    }
+    return result;
   }
 
   /// Extent of the pinned slivers (such as headers) that precede this sliver

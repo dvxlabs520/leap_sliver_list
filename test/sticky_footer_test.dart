@@ -13,6 +13,7 @@ void main() {
     List<int> sections = const [10],
     List<ListController>? lists,
     VoidCallback? onFooterTap,
+    VoidCallback? onTileTap,
     bool withHeaders = false,
     AxisDirection? direction,
     Axis axis = Axis.vertical,
@@ -29,10 +30,14 @@ void main() {
       listController: lists?[g],
       extentPrecalculationPolicy: PreciseExtents(),
       itemCount: sections[g],
-      itemBuilder: (_, i) => SizedBox(
-        key: ValueKey("tile$g-$i"),
-        height: 100,
-        child: Text("G$g Tile $i"),
+      itemBuilder: (_, i) => GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTileTap,
+        child: SizedBox(
+          key: ValueKey("tile$g-$i"),
+          height: 100,
+          child: Text("G$g Tile $i"),
+        ),
       ),
     );
     return Directionality(
@@ -118,23 +123,19 @@ void main() {
     final scroll = ScrollController();
     addTearDown(scroll.dispose);
     var taps = 0;
-    await pumpList(tester, build(scroll, onFooterTap: () => taps++));
+    var tileTaps = 0;
+    await pumpList(
+      tester,
+      build(scroll, onFooterTap: () => taps++, onTileTap: () => tileTaps++),
+    );
     await tester.tap(find.byKey(const ValueKey("footer0")));
     expect(taps, 1);
     // The tile behind the footer is not hit.
-    expect(
-      tester
-          .hitTestOnBinding(
-            tester.getCenter(find.byKey(const ValueKey("footer0"))),
-          )
-          .path
-          .any(
-            (e) =>
-                e.target is RenderParagraph &&
-                (e.target as RenderParagraph).text.toPlainText() == "G0 Tile 4",
-          ),
-      isFalse,
+    expect(tileTaps, 0);
+    await tester.tapAt(
+      tester.getTopLeft(find.byType(CustomScrollView)) + const Offset(100, 400),
     );
+    expect(tileTaps, 1);
   });
 
   testWidgets("jumpToItem keeps the item clear of the footer", (tester) async {
@@ -169,9 +170,9 @@ void main() {
     final top = tester.getTopLeft(find.byType(CustomScrollView)).dy;
 
     list.animateToItem(
-      index: 7,
+      index: () => 7,
       scrollController: scroll,
-      alignment: (_) => 1.0,
+      alignment: 1.0,
       duration: (_) => const Duration(milliseconds: 300),
       curve: (_) => Curves.linear,
     );
