@@ -1,3 +1,4 @@
+import "dart:math" as math;
 import "dart:ui";
 
 import "package:flutter/foundation.dart";
@@ -145,9 +146,55 @@ class ExtentManager with ChangeNotifier {
 
   int get numberOfItemsWithEstimatedExtent => _extentList.dirtyItemCount;
 
-  void addItem(int index) {
-    _extentList.insertAt(index, delegate.estimateExtentForItem);
+  void addItem(
+    int index, {
+    int count = 1,
+    bool preserveScrollPosition = false,
+  }) {
+    for (var i = 0; i < count; ++i) {
+      _extentList.insertAt(index, delegate.estimateExtentForItem);
+    }
+    if (preserveScrollPosition && count > 0) {
+      _pendingInsertions.add((index, count));
+    }
     delegate.onMarkNeedsLayout();
+  }
+
+  final _pendingInsertions = <(int, int)>[];
+
+  /// Maximum number of inserted items that are measured to determine the
+  /// scroll offset correction. The remaining ones use estimated extents.
+  static const _maxMeasuredInsertedItems = 256;
+
+  /// Returns (and clears) the total extent of the items inserted with
+  /// `preserveScrollPosition` that are located before [scrollOffset].
+  ///
+  /// The inserted items are measured with [measure] so that the correction is
+  /// exact and not just based on estimated extents.
+  double takeInsertionCorrection(
+    double scrollOffset, {
+    required double Function(int index) measure,
+  }) {
+    if (_pendingInsertions.isEmpty) {
+      return 0.0;
+    }
+    var correction = 0.0;
+    final pending = _pendingInsertions.toList();
+    _pendingInsertions.clear();
+    for (final (index, count) in pending) {
+      if (index >= _extentList.length ||
+          _extentList.offsetForIndex(index) > scrollOffset) {
+        continue;
+      }
+      final end = math.min(index + count, _extentList.length);
+      for (var i = index; i < end; ++i) {
+        if (i - index < _maxMeasuredInsertedItems) {
+          setExtent(i, measure(i));
+        }
+        correction += _extentList[i];
+      }
+    }
+    return correction;
   }
 
   void removeItem(int index) {

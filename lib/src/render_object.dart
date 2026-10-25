@@ -535,6 +535,28 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
     childManager.didStartLayout();
     childManager.setDidUnderflow(false);
 
+    // Items inserted above the viewport with preserveScrollPosition: move the
+    // scroll position by their extent so the visible items stay in place.
+    final insertionCorrection = _extentManager.takeInsertionCorrection(
+      constraints.scrollOffset,
+      measure: (index) {
+        var extent = 0.0;
+        invokeLayoutCallback((_) {
+          extent = childManager.measureExtentForItem(index, constraints);
+        });
+        return extent;
+      },
+    );
+    if (insertionCorrection.abs() > precisionErrorTolerance) {
+      _log.fine(
+        "Scroll offset correction: ${insertionCorrection.format()} "
+        "(reason: items inserted before the viewport)",
+      );
+      geometry = SliverGeometry(scrollOffsetCorrection: insertionCorrection);
+      childManager.didFinishLayout();
+      return;
+    }
+
     // This is also the last extent that this sliver list reported.
     final initialExtent = _totalExtent();
 

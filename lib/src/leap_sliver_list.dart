@@ -282,31 +282,57 @@ class ListController extends ChangeNotifier {
     _delegate!.invalidateAllExtents();
   }
 
-  /// Signals that a new item has been added to the list at [index].
-  /// This shift all extents after the [index] by one and will create new
-  /// estimated extent for the new item.
+  /// Signals that [count] new items have been added to the list at [index].
+  /// This shift all extents after the [index] by [count] and will create new
+  /// estimated extents for the new items.
   ///
   /// Being able to notify the list of an item being added is useful when
   /// eagerly precalculating extents.
-  void addItem(int index) {
+  ///
+  /// With [preserveScrollPosition] set to `true` and the items inserted above
+  /// the leading edge of the viewport, the scroll position is adjusted by the
+  /// extent of the new items, so the items that were visible stay where they
+  /// are. This is what chat-like lists need when older items are prepended.
+  /// Call this in the same frame in which the item count changes.
+  void addItem(
+    int index, {
+    int count = 1,
+    bool preserveScrollPosition = false,
+  }) {
     assert(_delegate != null, "ListController is not attached.");
+    assert(count >= 0);
+    if (count == 0) {
+      return;
+    }
     final manager = _delegate!;
     if (!manager.separated) {
-      manager.addItem(index);
+      manager.addItem(
+        index,
+        count: count,
+        preserveScrollPosition: preserveScrollPosition,
+      );
       return;
     }
     final children = manager.numberOfItems;
+    // Each new item comes with a separator. When appending, the separator
+    // goes before the item.
+    final int childIndex;
+    final int childCount;
     if (children == 0) {
-      manager.addItem(0);
+      childIndex = 0;
+      childCount = count * 2 - 1;
     } else if (index * 2 >= children + 1) {
-      // Appending: new separator followed by the new item.
-      manager.addItem(children);
-      manager.addItem(children + 1);
+      childIndex = children;
+      childCount = count * 2;
     } else {
-      // Inserting before an existing item: new item followed by a separator.
-      manager.addItem(index * 2);
-      manager.addItem(index * 2 + 1);
+      childIndex = index * 2;
+      childCount = count * 2;
     }
+    manager.addItem(
+      childIndex,
+      count: childCount,
+      preserveScrollPosition: preserveScrollPosition,
+    );
   }
 
   /// Signals that an item has been removed from the list at [index].
