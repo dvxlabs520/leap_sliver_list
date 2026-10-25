@@ -151,7 +151,7 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "0.5.0-dev"
+    version: "0.5.0"
   leap_sliver_list_example_data:
     dependency: "direct main"
     description:

@@ -460,6 +460,73 @@ class ListController extends ChangeNotifier {
       estimationOnly: false,
     );
   }
+
+  /// Finds the item that is closest to being aligned (as in [jumpToItem]) when
+  /// the scroll position is [scrollOffset], and the scroll offset that aligns
+  /// it exactly. Returns `null` for an empty list or if no item is laid out yet.
+  ///
+  /// This is what [ItemSnapScrollPhysics] uses. The search relies on the
+  /// current (possibly estimated) extents, so it is cheap and does not build
+  /// any items. It assumes an [alignment] between 0.0 and 1.0.
+  ItemSnapTarget? snapTarget(
+    double scrollOffset, {
+    double alignment = 0.0,
+    double alignmentOffset = 0.0,
+    ChildObstructionExtent? obstruction,
+  }) {
+    assert(_delegate != null, "ListController is not attached.");
+    final range = visibleRange;
+    final count = numberOfItems;
+    if (range == null || count == 0) {
+      return null;
+    }
+    // reveal(i) = offsetForIndex(i) + alignment * extent(i) + constant.
+    final reference = range.$1;
+    final constant =
+        getOffsetToReveal(
+          reference,
+          alignment,
+          alignmentOffset: alignmentOffset,
+          obstruction: obstruction,
+        ) -
+        offsetForIndex(reference) -
+        alignment * extentForIndex(reference).$1;
+    double reveal(int i) =>
+        offsetForIndex(i) + alignment * extentForIndex(i).$1 + constant;
+
+    // Smallest index whose reveal offset is not before [scrollOffset].
+    var low = 0;
+    var high = count - 1;
+    while (low < high) {
+      final mid = (low + high) ~/ 2;
+      if (reveal(mid) < scrollOffset) {
+        low = mid + 1;
+      } else {
+        high = mid;
+      }
+    }
+    var best = low;
+    if (low > 0 &&
+        (reveal(low - 1) - scrollOffset).abs() <
+            (reveal(low) - scrollOffset).abs()) {
+      best = low - 1;
+    }
+    return ItemSnapTarget(index: best, offset: reveal(best));
+  }
+}
+
+/// Result of [ListController.snapTarget].
+class ItemSnapTarget {
+  const ItemSnapTarget({required this.index, required this.offset});
+
+  /// Index of the item to snap to.
+  final int index;
+
+  /// Scroll offset at which the item is aligned.
+  final double offset;
+
+  @override
+  String toString() => "ItemSnapTarget(index: $index, offset: $offset)";
 }
 
 typedef ExtentEstimationProvider =
