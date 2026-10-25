@@ -19,7 +19,15 @@ void main() {
       });
     }
 
-    walk(tester.binding.pipelineOwner.semanticsOwner!.rootSemanticsNode!);
+    walk(
+      tester
+          .binding
+          .renderViews
+          .first
+          .owner!
+          .semanticsOwner!
+          .rootSemanticsNode!,
+    );
     expect(result, isNotNull);
     return result!;
   }
