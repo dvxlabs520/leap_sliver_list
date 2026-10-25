@@ -4,6 +4,7 @@ import "package:flutter/widgets.dart";
 import "extent_manager.dart";
 import "leap_sliver_list.dart";
 import "render_object.dart";
+import "sliver_extensions.dart";
 
 abstract class MeasuringRenderSliverBoxChildManager
     extends RenderSliverBoxChildManager {
@@ -44,10 +45,12 @@ class SuperSliverMultiBoxAdaptorElement extends SliverMultiBoxAdaptorElement
     double alignment, {
     required bool estimationOnly,
     Rect? rect,
+    ChildObstructionExtent? obstruction,
   }) {
     return renderObject.getOffsetToReveal(
       index,
       alignment,
+      obstruction: obstruction,
       estimationOnly: estimationOnly,
       rect: rect,
     );

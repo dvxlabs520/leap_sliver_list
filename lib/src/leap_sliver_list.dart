@@ -9,6 +9,7 @@ import "element.dart";
 import "extent_manager.dart";
 import "layout_budget.dart";
 import "render_object.dart";
+import "sliver_extensions.dart";
 
 final _log = Logger("SuperSliverList");
 
@@ -80,17 +81,28 @@ class ListController extends ChangeNotifier {
   /// edge of the viewport. If the value is 0.5, the item will be positioned in
   /// the middle of the viewport. If the value is 1.0, the item will be
   /// positioned at the trailing edge of the viewport.
+  ///
+  /// The optional [obstruction] describes space at the edges of the viewport
+  /// that is covered by something the list does not know about, for example
+  /// a `SliverStickyHeader` wrapping this list. The item is aligned within the
+  /// remaining area (see [ChildObstructionExtent]).
   void jumpToItem({
     required int index,
     required ScrollController scrollController,
     required double alignment,
     Rect? rect,
+    ChildObstructionExtent? obstruction,
   }) {
     assert(_delegate != null, "ListController is not attached.");
     for (final position in scrollController.positions) {
       _cancelAnimations(position);
     }
-    final offset = getOffsetToReveal(index, alignment, rect: rect);
+    final offset = getOffsetToReveal(
+      index,
+      alignment,
+      rect: rect,
+      obstruction: obstruction,
+    );
     if (offset.isFinite) {
       final minExtent = scrollController.position.minScrollExtent;
       final maxExtent = scrollController.position.maxScrollExtent;
@@ -125,6 +137,11 @@ class ListController extends ChangeNotifier {
   /// the middle of the viewport. If the value is 1.0, the item will be
   /// positioned at the trailing edge of the viewport.
   ///
+  /// The optional [obstruction] describes space at the edges of the viewport
+  /// that is covered by something the list does not know about, for example
+  /// a `SliverStickyHeader` wrapping this list. The item is aligned within the
+  /// remaining area (see [ChildObstructionExtent]).
+  ///
   /// Returns an [ItemAnimation] that can be awaited and canceled. The animation
   /// is canceled automatically when the user scrolls the list, when another
   /// animation or [jumpToItem] starts on the same scroll position and when
@@ -136,6 +153,7 @@ class ListController extends ChangeNotifier {
     required Duration Function(double estimatedDistance) duration,
     required Curve Function(double estimatedDistance) curve,
     Rect? rect,
+    ChildObstructionExtent? obstruction,
   }) {
     assert(_delegate != null, "ListController is not attached.");
     final parts = <AnimateToItem>[];
@@ -151,6 +169,7 @@ class ListController extends ChangeNotifier {
         },
         alignment: alignment,
         rect: rect,
+        obstruction: obstruction,
         position: position,
         curve: curve,
         duration: duration,
@@ -388,14 +407,22 @@ class ListController extends ChangeNotifier {
   /// useful for questions such as "which is the topmost item not hidden behind
   /// a header?".
   ///
+  /// The optional [obstruction] works as in [jumpToItem].
+  ///
   /// The returned value may be an estimate if the item (or items before it)
   /// have not been laid out yet. It is not clamped to the scroll extent.
-  double getOffsetToReveal(int index, double alignment, {Rect? rect}) {
+  double getOffsetToReveal(
+    int index,
+    double alignment, {
+    Rect? rect,
+    ChildObstructionExtent? obstruction,
+  }) {
     assert(_delegate != null, "ListController is not attached.");
     return _delegate!.getOffsetToReveal(
       _childIndex(index),
       alignment,
       rect: rect,
+      obstruction: obstruction,
       estimationOnly: false,
     );
   }

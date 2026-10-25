@@ -3,6 +3,7 @@ import "dart:ui";
 import "package:flutter/foundation.dart";
 
 import "extent_list.dart";
+import "sliver_extensions.dart";
 
 abstract class ExtentManagerDelegate {
   const ExtentManagerDelegate();
@@ -14,6 +15,7 @@ abstract class ExtentManagerDelegate {
     double alignment, {
     required bool estimationOnly,
     Rect? rect,
+    ChildObstructionExtent? obstruction,
   });
 }
 
@@ -170,11 +172,13 @@ class ExtentManager with ChangeNotifier {
     double alignment, {
     Rect? rect,
     required bool estimationOnly,
+    ChildObstructionExtent? obstruction,
   }) {
     return delegate.getOffsetToReveal(
       index,
       alignment,
       rect: rect,
+      obstruction: obstruction,
       estimationOnly: estimationOnly,
     );
   }

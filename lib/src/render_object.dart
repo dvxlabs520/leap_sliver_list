@@ -1159,6 +1159,7 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
     double alignment, {
     required bool estimationOnly,
     Rect? rect,
+    ChildObstructionExtent? obstruction,
   }) {
     final renderObject = _FakeRenderObject(
       parent: this,
@@ -1172,6 +1173,7 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
           alignment,
           esimationOnly: estimationOnly,
           rect: rect,
+          extraObstruction: obstruction,
         )
         .offset;
   }

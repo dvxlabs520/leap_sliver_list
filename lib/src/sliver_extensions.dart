@@ -1,7 +1,7 @@
 import "package:flutter/rendering.dart";
 
 class ChildObstructionExtent {
-  ChildObstructionExtent({required this.leading, required this.trailing});
+  const ChildObstructionExtent({required this.leading, required this.trailing});
 
   /// Amount of space from the leading edge where this sliver obstructs its child.
   final double leading;
@@ -73,7 +73,7 @@ extension RenderObjectChildObstuctionExtent on RenderObject {
   /// Returns the total child obstruction extent of all slivers
   /// above and this render object.
   ChildObstructionExtent getParentChildObstructionExtent() {
-    var childObstructionExtent = ChildObstructionExtent(
+    var childObstructionExtent = const ChildObstructionExtent(
       leading: 0,
       trailing: 0,
     );
@@ -136,6 +136,7 @@ extension RenderViewportExt on RenderAbstractViewport {
     bool esimationOnly = false,
     Rect? rect,
     Axis? axis,
+    ChildObstructionExtent? extraObstruction,
   }) {
     final context = OffsetToRevealContext(
       viewport: this,
@@ -147,8 +148,6 @@ extension RenderViewportExt on RenderAbstractViewport {
     );
     OffsetToRevealContext._contexts.add(context);
     var result = getOffsetToReveal(target, alignment, rect: rect);
-    OffsetToRevealContext._contexts.removeLast();
-    final obstruction = target.getParentChildObstructionExtent();
 
     final resolvedAxis = (this is RenderViewportBase
         ? (this as RenderViewportBase).axis
@@ -161,6 +160,32 @@ extension RenderViewportExt on RenderAbstractViewport {
         return rect.shift(Offset(offset, 0));
       }
     }
+
+    // When the top level sliver containing the target has a scroll obstruction
+    // (such as `SliverStickyHeader` wrapping the list) the viewport considers
+    // the target pinned and returns an infinite offset for the edge alignment.
+    // Items of a list are never pinned though, so work out the offset from two
+    // alignments the viewport accepts. The offset is linear in alignment.
+    if (result.offset.isInfinite) {
+      final isForward = result.offset == double.infinity;
+      final a1 = isForward ? 1.0 : 0.0;
+      const a2 = 0.5;
+      final r1 = getOffsetToReveal(target, a1, rect: rect);
+      final r2 = getOffsetToReveal(target, a2, rect: rect);
+      if (r1.offset.isFinite && r2.offset.isFinite) {
+        final slope = (r1.offset - r2.offset) / (a1 - a2);
+        final offset = r1.offset + slope * (alignment - a1);
+        result = RevealedOffset(
+          offset: offset,
+          rect: shiftRect(r1.rect, r1.offset - offset),
+        );
+      }
+    }
+    OffsetToRevealContext._contexts.removeLast();
+    final obstruction =
+        target.getParentChildObstructionExtent() +
+        (extraObstruction ??
+            const ChildObstructionExtent(leading: 0, trailing: 0));
 
     // RenderViewport.getOffsetToReveal ignores the viewport anchor: with
     // anchor the zero scroll offset is located anchor * extent from the

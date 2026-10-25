@@ -5,6 +5,7 @@ import "package:flutter/scheduler.dart";
 import "package:flutter/widgets.dart";
 
 import "extent_manager.dart";
+import "sliver_extensions.dart";
 
 /// Handle for an animation started by [ListController.animateToItem].
 ///
@@ -81,6 +82,7 @@ class AnimateToItem {
     required this.index,
     required this.alignment,
     required this.rect,
+    this.obstruction,
     required this.position,
     required this.duration,
     required this.curve,
@@ -91,6 +93,7 @@ class AnimateToItem {
   final ValueGetter<int?> index;
   final double alignment;
   final Rect? rect;
+  final ChildObstructionExtent? obstruction;
   final ScrollPosition position;
   final Duration Function(double estimatedDistance) duration;
   final Curve Function(double estimatedDistance) curve;
@@ -121,6 +124,7 @@ class AnimateToItem {
       index,
       alignment,
       rect: rect,
+      obstruction: obstruction,
       estimationOnly: true,
     );
     final estimatedDistance = (estimatedTarget - _start).abs();
@@ -175,6 +179,7 @@ class AnimateToItem {
       index,
       alignment,
       rect: rect,
+      obstruction: obstruction,
       estimationOnly: value < 1.0,
     );
     if (value < 1.0) {
