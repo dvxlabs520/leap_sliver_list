@@ -1,6 +1,6 @@
 name: leap_sliver_list
 description: "Drop-in replacement for SliverList and ListView that can handle large lists with variable extents and jump/animate to specific items."
-version: 0.5.0
+version: 0.6.0-dev
 homepage: https://github.com/dvxlabs520/leap_sliver_list
 repository: https://github.com/dvxlabs520/leap_sliver_list
 issue_tracker: https://github.com/dvxlabs520/leap_sliver_list/issues

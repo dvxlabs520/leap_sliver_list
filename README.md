@@ -153,6 +153,70 @@ _listController.addItem(0, count: olderMessages.length, preserveScrollPosition: 
 
 The scroll position is compensated exactly for up to 256 inserted items that are not built yet; for larger insertions the estimated extents are used.
 
+### Initial position
+
+`initialItem` scrolls to an item before the first frame is painted, so there is no flash of the top of the list ([upstream #58](https://github.com/superlistapp/super_sliver_list/issues/58)). It uses the same alignment as `jumpToItem` and is applied once, when the list first has items:
+
+```dart
+SuperListView.builder(
+  initialItem: const ItemPosition(index: 120, alignment: 0.5),
+  itemCount: 1000,
+  itemBuilder: /*...*/,
+)
+```
+
+It is ignored when the scroll position is not 0 at that moment (for example with `ScrollController.initialScrollOffset`) and for reverse growth (`center` before the list).
+
+### Chat lists
+
+* **Newest at the bottom:** `stickToEnd: true` keeps the end in view when items are appended (or the last item grows) *while the end was visible*. If the user scrolled away the position is left alone, and the list starts at its end. When combined with `initialItem`, the initial item wins.
+* **Newest at the top (`reverse: true`):** nothing special is needed to stay at the newest message; use `addItem(0, preserveScrollPosition: true)` (see below) to keep the position of a user that scrolled back in time.
+
+### Scroll anchoring
+
+When the extent of an item above the first visible item changes (an image loaded, a text expanded), the visible content stays where it is instead of jumping. This is on by default; pass `scrollAnchoring: false` to restore the 0.5 behavior.
+
+### Pixel alignment and snapping
+
+`jumpToItem`, `animateToItem` and `getOffsetToReveal` take an `alignmentOffset` in logical pixels (towards the trailing edge) on top of `alignment`, for example "item 10 with its top 8 px below the viewport top":
+
+```dart
+_listController.jumpToItem(
+  index: 10,
+  scrollController: _scrollController,
+  alignment: 0.0,
+  alignmentOffset: 8.0,
+);
+```
+
+`ItemSnapScrollPhysics` makes a list settle with an item aligned, like a pager that is not page-sized:
+
+```dart
+SuperListView.builder(
+  listController: _listController,
+  physics: ItemSnapScrollPhysics(listController: _listController),
+  /*...*/
+)
+```
+
+`ListController.snapTarget(scrollOffset)` returns the item and offset it would settle on. The physics works with a single list; across several lists in one scroll view it snaps to the items of the given controller only.
+
+### Sticky headers
+
+`SuperStickyHeader` pins a header to the leading edge while its list scrolls underneath, and the next header pushes it out. It is built from Flutter's `SliverMainAxisGroup` and `PinnedHeaderSliver`, with no extra package:
+
+```dart
+CustomScrollView(slivers: [
+  for (final section in sections)
+    SuperStickyHeader(
+      header: SectionHeader(section),
+      sliver: SuperSliverList.builder(/*...*/),
+    ),
+])
+```
+
+`jumpToItem`, `animateToItem` and `getOffsetToReveal` align the item within the part of the viewport that the header does not cover, for any `alignment`, so do not pass an `obstruction` for it. Only headers at the leading edge are supported. Headers from other packages (such as `flutter_sticky_header`) still work with the `obstruction` parameter as described above. Not included: a getter for the currently active section.
+
 ## Advanced
 
 Very roughtly speaking `SuperSliverList` works by estimating the extent of items that are outside of viewport and when these items are scrolled into the viewport cache area the scroll position is transparently adjusted to account of the difference between estimated and actual extents. On small lists this difference may result in scrollbar movement not being perfectly aligned with list movement. `SuperSliverList` provides two ways to rectify this:
@@ -167,6 +231,16 @@ SuperSliverList(
     estimateExtent: (index) => 100.0, // Provide your own extent estimation
 )
 ```
+
+### Adaptive estimation
+
+With the default estimate (100 px) a list of 200 px items reports a scroll extent half the real size until everything was measured. `adaptiveEstimation: true` uses the average extent of the items measured so far for the items that were not measured:
+
+```dart
+SuperListView.builder(adaptiveEstimation: true, /*...*/)
+```
+
+The extent (and with it the scrollbar thumb size and jumps to far away items) converges while scrolling; the visible items do not move when the estimate is updated. Updates happen when the number of measured items doubles, so the cost stays linear. It is off by default, and ignored when `extentEstimation` is given. There is no estimator per kind of item (header, image, text) yet.
 
 ### Precalculate extents for items
 
@@ -216,9 +290,9 @@ Reference run (Linux, 8 cores, Flutter 3.47.8, per-frame time of `pump`):
 
 Ideas that are not done yet:
 
-* Initial scroll position without a post-frame jump (upstream #58, #69).
-* Scroll anchoring when the height of an item above the viewport changes.
-* Native sticky headers and a multi-column variant.
+* A getter for the active sticky header, a sectioned list helper, and sticky headers at the trailing edge.
+* An estimator per kind of item, and a better scrollbar for huge lists.
+* A multi-column (grid) variant.
 * Integration tests on devices, and benchmarks on web/wasm. Only the Dart VM test runner and the web build are verified today; iOS and Android are not.
 
 ## Attribution

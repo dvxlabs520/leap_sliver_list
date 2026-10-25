@@ -1,3 +1,23 @@
+## 0.6.0-dev
+
+New features. All changes are backwards compatible (additions only).
+
+### New API
+
+* `initialItem` (`ItemPosition`) on `SuperSliverList` and `SuperListView`: start at an item, without a flash of the first items ([upstream #58](https://github.com/superlistapp/super_sliver_list/issues/58)).
+* `stickToEnd`: keep the end of the list in view while items arrive, for chat lists.
+* `scrollAnchoring` (default `true`): when the extent of an item above the first visible one changes, the visible content stays in place.
+* `alignmentOffset` on `jumpToItem`, `animateToItem` and `getOffsetToReveal`: pixel-precise alignment on top of `alignment`.
+* `ItemSnapScrollPhysics` and `ListController.snapTarget`: settle with an item aligned.
+* `adaptiveEstimation` (opt-in): the estimate for items that were not measured follows the measured average, so the scroll extent and scrollbar converge faster.
+* `SuperStickyHeader`: native sticky header built from `SliverMainAxisGroup` and `PinnedHeaderSliver`; the `ListController` methods align items below it. For alignments other than 0 the offset Flutter's group computes leaves the item partly outside the viewport, this is corrected.
+
+### Other
+
+* Example app: new "Chat and sections" page.
+* New widget tests for each feature, plus semantics tests that guard parity with `ListView` (scroll child count and item indexes).
+* Not done: a getter for the active sticky header ([upstream #56](https://github.com/superlistapp/super_sliver_list/issues/56)), sectioned list helper, an estimator per item kind, grid.
+
 ## 0.5.0
 
 Bug fixes and new API. All changes are backwards compatible (additions only; `animateToItem` now returns an `ItemAnimation` instead of `void`).
