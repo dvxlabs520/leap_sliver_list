@@ -1,7 +1,7 @@
-name: super_sliver_list_example_data
-description: "Example data for super_sliver_list example"
+name: leap_sliver_list_example_data
+description: "Example data for leap_sliver_list example"
 version: 0.0.1
-homepage: https://github.com/superlistapp/super_sliver_list
+homepage: https://github.com/dvxlabs520/leap_sliver_list
 
 environment:
   sdk: '>=3.3.0 <4.0.0'

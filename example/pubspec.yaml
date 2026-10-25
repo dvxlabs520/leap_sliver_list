@@ -1,5 +1,5 @@
 name: example
-description: "SuperSliverList example"
+description: "LeapSliverList example"
 publish_to: "none"
 version: 0.1.0
 
@@ -9,18 +9,15 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  super_sliver_list:
+  leap_sliver_list:
     path: ../
   logging: ^1.2.0
   headless_widgets:
     git:
       url: https://github.com/widgetbakery/headless_widgets.git
       ref: eac8e9d04aaf493d7dec57bd9b0bb26b88a76b43
-  super_sliver_list_example_data:
-    git:
-      url: https://github.com/superlistapp/super_sliver_list.git
-      ref: c9030fbdd3d1be6cdbe9968d0a7d7c66b7988437
-      path: example/data
+  leap_sliver_list_example_data:
+    path: data
   context_plus: ^2.0.1
   flutter_lorem: ^2.0.0
   pixel_snap: ^0.1.5

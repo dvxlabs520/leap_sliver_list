@@ -1,4 +1,4 @@
-import "package:super_sliver_list/src/extent_list.dart";
+import "package:leap_sliver_list/src/extent_list.dart";
 import "package:test/test.dart";
 
 void main() {

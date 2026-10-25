@@ -50,7 +50,7 @@ class Header extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      "SuperSliverList",
+                      "LeapSliverList",
                       style: TextStyle(
                         fontSize: 20,
                         color: Color(0xFFF84F39),
@@ -64,7 +64,7 @@ class Header extends StatelessWidget {
                       ),
                       child: LinkButton(
                         uri: Uri.parse(
-                          "https://github.com/superlistapp/super_sliver_list",
+                          "https://github.com/dvxlabs520/leap_sliver_list",
                         ),
                       ),
                     ),

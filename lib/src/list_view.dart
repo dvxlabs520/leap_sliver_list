@@ -2,7 +2,7 @@ import "dart:math" as math;
 
 import "package:flutter/widgets.dart";
 
-import "super_sliver_list.dart";
+import "leap_sliver_list.dart";
 
 /// This is a drop-in replacement Flutter [ListView] that provides much better
 /// performance with large number of children with variable extents. Unlike

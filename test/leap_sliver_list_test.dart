@@ -6,7 +6,7 @@ import "package:flutter/rendering.dart";
 import "package:flutter_test/flutter_test.dart";
 import "package:logging/logging.dart";
 import "package:sliver_tools/sliver_tools.dart";
-import "package:super_sliver_list/super_sliver_list.dart";
+import "package:leap_sliver_list/leap_sliver_list.dart";
 
 // ignore: deprecated_member_use
 import "package:test_api/src/backend/invoker.dart" as invoker;
@@ -19,7 +19,7 @@ Matcher roughlyEquals(double value) {
   return closeTo(value, precisionErrorTolerance);
 }
 
-final _log = Logger("super_sliver_list_test");
+final _log = Logger("leap_sliver_list_test");
 
 class _SimpleExtentPrecalculatePolicy extends ExtentPrecalculationPolicy {
   final bool precalculate;

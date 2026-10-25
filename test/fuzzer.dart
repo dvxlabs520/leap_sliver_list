@@ -4,7 +4,7 @@ import "package:logging/logging.dart";
 
 import "sliver_list_configuration.dart";
 
-final _log = Logger("super_sliver_list_test");
+final _log = Logger("leap_sliver_list_test");
 
 enum LayoutMode {
   /// Wait until entire layout is complete before doing the test.

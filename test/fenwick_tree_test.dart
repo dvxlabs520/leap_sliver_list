@@ -1,6 +1,6 @@
 import "dart:typed_data";
 
-import "package:super_sliver_list/src/fenwick_tree.dart";
+import "package:leap_sliver_list/src/fenwick_tree.dart";
 import "package:test/test.dart";
 
 void main() {

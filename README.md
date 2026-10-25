@@ -1,6 +1,8 @@
-# SliverList and ListView - Supercharged
+# leap_sliver_list
 
-> See the [live example](https://superlistapp.github.io/super_sliver_list/#/) of `SuperSliverList`.
+SliverList and ListView - supercharged. A maintained fork of [`super_sliver_list`](https://github.com/superlistapp/super_sliver_list).
+
+> **Migrating from `super_sliver_list`?** Replace the dependency with `leap_sliver_list` and change the import to `package:leap_sliver_list/leap_sliver_list.dart`. The public API (`SuperSliverList`, `SuperListView`, `ListController`, ...) is unchanged.
 
 `SuperSliverList` and `SuperListView` are drop in replacement widgets for `SliverList` and `ListView` with greatly improved performance and additional features:
 
@@ -134,4 +136,18 @@ The threshold is arbitrary, but in general there are diminishing returns for pre
 
 ## Example
 
-See the [example](example) folder for a complete sample app using `SuperSliverList`. You can also see the [example deployed live](https://superlistapp.github.io/super_sliver_list/).
+See the [example](example) folder for a complete sample app using `SuperSliverList`.
+
+## Roadmap
+
+Planned for the next releases (see also the issue tracker):
+
+* Fix `jumpToItem` landing at the wrong offset with `.separated` constructors (upstream #83).
+* Fix `center`/`anchor` handling in the viewport (upstream #59).
+* Rework `animateToItem` (cancellation, awaitable future, leaks; upstream #76, #82, #92, #93, #97, #86).
+* Expose `getOffsetToReveal` / offset-for-index helpers (upstream #95, #99).
+* Reproducible performance benchmarks (web/wasm).
+
+## Attribution
+
+`leap_sliver_list` is a fork of [`super_sliver_list`](https://github.com/superlistapp/super_sliver_list) v0.4.1 by Matej Knopp, Superlist and the contributors, released under the MIT license. The original code is imported at upstream commit `bfa3d5d` (without its git history) and is maintained here. This project is not affiliated with or endorsed by Superlist. See [NOTICE](NOTICE) and [LICENSE](LICENSE).

@@ -1,3 +1,8 @@
+## 0.5.0-dev
+
+* Fork of [`super_sliver_list` 0.4.1](https://github.com/superlistapp/super_sliver_list) (upstream commit `bfa3d5d`), now maintained as `leap_sliver_list`.
+* Package renamed to `leap_sliver_list`; library entry point is now `package:leap_sliver_list/leap_sliver_list.dart`. Public API is otherwise unchanged.
+
 ## 0.4.1
 
 * Fix missing propagation of `rect` inside `RenderViewportExt.getOffsetToRevealExt`.

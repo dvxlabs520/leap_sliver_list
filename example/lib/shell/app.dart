@@ -4,7 +4,7 @@ import "package:flutter/material.dart"
     show Colors, Scrollbar, ScrollbarTheme, ScrollbarThemeData, Typography;
 import "package:flutter/services.dart";
 import "package:pixel_snap/widgets.dart";
-import "package:super_sliver_list/super_sliver_list.dart";
+import "package:leap_sliver_list/leap_sliver_list.dart";
 
 import "../util/media_query.dart";
 import "app_settings.dart";
