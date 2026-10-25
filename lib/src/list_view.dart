@@ -42,6 +42,7 @@ class SuperListView extends BoxScrollView {
     this.extentEstimation,
     this.extentPrecalculationPolicy,
     this.delayPopulatingCacheArea = false,
+    this.adaptiveEstimation = false,
     this.stickToEnd = false,
     this.initialItem,
     this.scrollAnchoring = true,
@@ -92,6 +93,7 @@ class SuperListView extends BoxScrollView {
     this.extentEstimation,
     this.extentPrecalculationPolicy,
     this.delayPopulatingCacheArea = false,
+    this.adaptiveEstimation = false,
     this.stickToEnd = false,
     this.initialItem,
     this.scrollAnchoring = true,
@@ -146,6 +148,7 @@ class SuperListView extends BoxScrollView {
     this.extentEstimation,
     this.extentPrecalculationPolicy,
     this.delayPopulatingCacheArea = false,
+    this.adaptiveEstimation = false,
     this.stickToEnd = false,
     this.initialItem,
     this.scrollAnchoring = true,
@@ -203,6 +206,7 @@ class SuperListView extends BoxScrollView {
     this.extentEstimation,
     this.extentPrecalculationPolicy,
     this.delayPopulatingCacheArea = false,
+    this.adaptiveEstimation = false,
     this.stickToEnd = false,
     this.initialItem,
     this.scrollAnchoring = true,
@@ -248,6 +252,9 @@ class SuperListView extends BoxScrollView {
   /// are only built after the scrolling slows down.
   final bool delayPopulatingCacheArea;
 
+  /// Opt-in: estimate the extent of items that were not measured yet with the average extent of the items measured so far, instead of a constant. This makes the scroll extent (and with it the scrollbar and jumps to far away items) converge to the real values for lists with items much taller or shorter than the default estimate. Ignored when [extentEstimation] is set.
+  final bool adaptiveEstimation;
+
   /// Keeps the end of the list in view: when the list grows (or its last item gets taller) while its end was visible, the scroll position follows the new end, as chat apps do. When the user scrolled away from the end the position is left alone. For reversed chat lists (newest item at index 0) use [ListController.addItem] with preserveScrollPosition instead.
   final bool stickToEnd;
 
@@ -264,6 +271,7 @@ class SuperListView extends BoxScrollView {
       listController: listController,
       listControllerIndexesItems: listControllerIndexesItems,
       delayPopulatingCacheArea: delayPopulatingCacheArea,
+      adaptiveEstimation: adaptiveEstimation,
       stickToEnd: stickToEnd,
       initialItem: initialItem,
       scrollAnchoring: scrollAnchoring,

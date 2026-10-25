@@ -653,6 +653,7 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
     this.extentEstimation,
     this.delayPopulatingCacheArea = true,
     this.layoutKeptAliveChildren = false,
+    this.adaptiveEstimation = false,
     this.stickToEnd = false,
     this.initialItem,
     this.scrollAnchoring = true,
@@ -672,6 +673,7 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
     this.extentEstimation,
     this.delayPopulatingCacheArea = true,
     this.layoutKeptAliveChildren = false,
+    this.adaptiveEstimation = false,
     this.stickToEnd = false,
     this.initialItem,
     this.scrollAnchoring = true,
@@ -704,6 +706,7 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
     this.extentEstimation,
     this.delayPopulatingCacheArea = true,
     this.layoutKeptAliveChildren = false,
+    this.adaptiveEstimation = false,
     this.stickToEnd = false,
     this.initialItem,
     this.scrollAnchoring = true,
@@ -754,6 +757,7 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
     this.extentEstimation,
     this.delayPopulatingCacheArea = true,
     this.layoutKeptAliveChildren = false,
+    this.adaptiveEstimation = false,
     this.stickToEnd = false,
     this.initialItem,
     this.scrollAnchoring = true,
@@ -815,6 +819,9 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
   /// maintained and proper paint transform is applied.
   final bool layoutKeptAliveChildren;
 
+  /// Opt-in: estimate the extent of items that were not measured yet with the average extent of the items measured so far, instead of a constant. This makes the scroll extent (and with it the scrollbar and jumps to far away items) converge to the real values for lists with items much taller or shorter than the default estimate. Ignored when [extentEstimation] is set.
+  final bool adaptiveEstimation;
+
   /// Keeps the end of the list in view: when the list grows (or its last item gets taller) while its end was visible, the scroll position follows the new end, as chat apps do. When the user scrolled away from the end the position is left alone. For reversed chat lists (newest item at index 0) use [ListController.addItem] with preserveScrollPosition instead.
   final bool stickToEnd;
 
@@ -841,6 +848,7 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
       delayPopulatingCacheArea: delayPopulatingCacheArea,
       layoutKeptAliveChildren: layoutKeptAliveChildren,
       scrollAnchoring: scrollAnchoring,
+      adaptiveEstimation: adaptiveEstimation && extentEstimation == null,
       initialItem: initialItem,
       stickToEnd: stickToEnd,
     );
@@ -858,6 +866,8 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
         extentEstimation ?? _defaultEstimateExtent;
     renderSliverList.delayPopulatingCacheArea = delayPopulatingCacheArea;
     renderSliverList.layoutKeptAliveChildren = layoutKeptAliveChildren;
+    renderSliverList.adaptiveEstimation =
+        adaptiveEstimation && extentEstimation == null;
     renderSliverList.stickToEnd = stickToEnd;
     renderSliverList.initialItem = initialItem;
     renderSliverList.scrollAnchoring = scrollAnchoring;

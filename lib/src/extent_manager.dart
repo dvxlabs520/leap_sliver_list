@@ -28,6 +28,62 @@ class ExtentManager with ChangeNotifier {
 
   final ExtentManagerDelegate delegate;
 
+  /// When `true` the extent of items that were not measured yet follows the
+  /// average of the items measured so far, instead of the delegate estimate.
+  bool adaptiveEstimation = false;
+
+  double? _adaptiveEstimate;
+  int _lastReestimateCount = 0;
+
+  double _estimateForItem(int? index) {
+    final adaptive = _adaptiveEstimate;
+    if (adaptiveEstimation && adaptive != null) {
+      return adaptive;
+    }
+    return delegate.estimateExtentForItem(index);
+  }
+
+  /// Updates the estimated extent of items that were not measured yet if the
+  /// average of the measured items differs from the current estimate. This
+  /// is only done when the number of measured items has doubled since the last
+  /// time, so the total cost stays linear.
+  ///
+  /// Returns the change of the offset of the item at [index]
+  /// (which is the sum of the changes of the extents before it).
+  double reestimateIfNeeded(int index) {
+    if (!adaptiveEstimation) {
+      return 0.0;
+    }
+    final count = _extentList.measuredCount;
+    if (count < _minMeasuredForReestimation ||
+        count < _lastReestimateCount * 2) {
+      if (count < _lastReestimateCount) {
+        _lastReestimateCount = count;
+      }
+      return 0.0;
+    }
+    _lastReestimateCount = count;
+    final average = _extentList.averageMeasuredExtent!;
+    final current = _adaptiveEstimate ?? delegate.estimateExtentForItem(null);
+    if (average <= 0 ||
+        (average - current).abs() <= current * _reestimationThreshold) {
+      return 0.0;
+    }
+    final before = index < _extentList.length
+        ? _extentList.offsetForIndex(index)
+        : 0.0;
+    _adaptiveEstimate = average;
+    _extentList.reestimateDirty(average);
+    _isModified = true;
+    final after = index < _extentList.length
+        ? _extentList.offsetForIndex(index)
+        : 0.0;
+    return after - before;
+  }
+
+  static const _minMeasuredForReestimation = 6;
+  static const _reestimationThreshold = 0.05;
+
   /// Whether children alternate between items and separators. The manager
   /// itself always works with child indices; [ListController] uses this flag
   /// to translate the item indices of its public API.
@@ -48,6 +104,7 @@ class ExtentManager with ChangeNotifier {
     _afterCorrection = 0.0;
     _beforeCorrection = 0.0;
     _isModified = true;
+    _lastReestimateCount = 0;
     _extentList.markAllDirty();
   }
 
@@ -66,7 +123,7 @@ class ExtentManager with ChangeNotifier {
       return;
     }
     _isModified = true;
-    _extentList.resize(newSize, delegate.estimateExtentForItem);
+    _extentList.resize(newSize, _estimateForItem);
   }
 
   final _extentList = ExtentList();
@@ -152,7 +209,7 @@ class ExtentManager with ChangeNotifier {
     bool preserveScrollPosition = false,
   }) {
     for (var i = 0; i < count; ++i) {
-      _extentList.insertAt(index, delegate.estimateExtentForItem);
+      _extentList.insertAt(index, _estimateForItem);
     }
     if (preserveScrollPosition && count > 0) {
       _pendingInsertions.add((index, count));
@@ -208,6 +265,7 @@ class ExtentManager with ChangeNotifier {
   }
 
   void invalidateAllExtents() {
+    _lastReestimateCount = 0;
     _extentList.markAllDirty();
     delegate.onMarkNeedsLayout();
   }

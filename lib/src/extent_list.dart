@@ -104,6 +104,11 @@ class ExtentList {
   final _dirty = BoolList.empty(growable: true);
   int _dirtyCount = 0;
 
+  // Sum and count of the extents that were measured (are not dirty). Used to
+  // derive the average item extent.
+  double _measuredSum = 0.0;
+  int _measuredCount = 0;
+
   double get _totalExtent => __totalExtent;
   set _totalExtent(double value) {
     __totalExtent = value;
@@ -134,6 +139,10 @@ class ExtentList {
     if (!isEstimation) {
       if (_dirty[index]) {
         --_dirtyCount;
+        ++_measuredCount;
+        _measuredSum += extent;
+      } else {
+        _measuredSum += extent - _extents[index];
       }
       _dirty[index] = false;
 
@@ -196,6 +205,8 @@ class ExtentList {
     }
     _dirty.fillRange(0, _dirty.length, true);
     _dirtyCount = _dirty.length;
+    _measuredSum = 0.0;
+    _measuredCount = 0;
     _cleanRangeStart = null;
     _cleanRangeEnd = null;
   }
@@ -207,6 +218,8 @@ class ExtentList {
     if (!_dirty[index]) {
       _dirty[index] = true;
       ++_dirtyCount;
+      --_measuredCount;
+      _measuredSum -= _extents[index];
       _cleanRangeStart = null;
       _cleanRangeEnd = null;
     }
@@ -214,10 +227,14 @@ class ExtentList {
 
   void removeAt(int index) {
     assert(index >= 0 && index < _extents.length);
-    _totalExtent -= _extents[index];
+    final removed = _extents[index];
+    _totalExtent -= removed;
     _extents.removeAt(index);
     if (_dirty[index]) {
       --_dirtyCount;
+    } else {
+      --_measuredCount;
+      _measuredSum -= removed;
     }
     _dirty.removeAt(index);
     _cleanRangeStart = null;
@@ -277,6 +294,17 @@ class ExtentList {
 
     _dirty.length = newSize;
 
+    if (newSize < prevSize) {
+      _measuredSum = 0.0;
+      _measuredCount = 0;
+      for (var i = 0; i < newSize; ++i) {
+        if (!_dirty[i]) {
+          _measuredSum += _extents[i];
+          ++_measuredCount;
+        }
+      }
+    }
+
     if (newSize > prevSize) {
       _dirty.fillRange(prevSize, newSize, true);
       _dirtyCount += newSize - prevSize;
@@ -290,6 +318,29 @@ class ExtentList {
     if (_cleanRangeEnd != null && _cleanRangeEnd! >= newSize) {
       _cleanRangeEnd = newSize - 1;
     }
+    _fenwickTree = null;
+  }
+
+  /// Number of items with a measured extent.
+  int get measuredCount => _measuredCount;
+
+  /// Average extent of the measured items, or `null` if none was measured.
+  double? get averageMeasuredExtent =>
+      _measuredCount == 0 ? null : _measuredSum / _measuredCount;
+
+  /// Replaces the extent of all items that were not measured yet.
+  void reestimateDirty(double extent) {
+    if (_dirtyCount == 0) {
+      return;
+    }
+    var total = 0.0;
+    for (var i = 0; i < _extents.length; ++i) {
+      if (_dirty[i]) {
+        _extents[i] = extent;
+      }
+      total += _extents[i];
+    }
+    _totalExtent = total;
     _fenwickTree = null;
   }
 

@@ -71,11 +71,13 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
     required this.estimateExtent,
     required this.delayPopulatingCacheArea,
     required this.layoutKeptAliveChildren,
+    bool adaptiveEstimation = false,
     this.stickToEnd = false,
     required this.initialItem,
     this.scrollAnchoring = true,
   }) {
     this.extentPrecalculationPolicy = extentPrecalculationPolicy;
+    this.adaptiveEstimation = adaptiveEstimation;
   }
 
   @override
@@ -95,6 +97,11 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
   ExtentEstimationProvider estimateExtent;
   bool delayPopulatingCacheArea;
   bool layoutKeptAliveChildren = false;
+  bool get adaptiveEstimation => _extentManager.adaptiveEstimation;
+  set adaptiveEstimation(bool value) {
+    _extentManager.adaptiveEstimation = value;
+  }
+
   bool stickToEnd;
   ItemPosition? initialItem;
   bool scrollAnchoring;
@@ -546,6 +553,25 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
 
     childManager.didStartLayout();
     childManager.setDidUnderflow(false);
+
+    // With adaptive estimation the estimate for items that were not measured
+    // yet follows the measured average. Keep the visible items in place when
+    // that changes the extent of the items before them.
+    if (firstChild != null && childManager.childCount > 0) {
+      final estimationCorrection = _extentManager.reestimateIfNeeded(
+        indexOf(firstChild!),
+      );
+      if (estimationCorrection.abs() > precisionErrorTolerance) {
+        _log.fine(
+          "Scroll offset correction: ${estimationCorrection.format()} "
+          "(reason: adaptive extent estimation)",
+        );
+        _shiftLayoutOffsets(firstChild, estimationCorrection);
+        geometry = SliverGeometry(scrollOffsetCorrection: estimationCorrection);
+        childManager.didFinishLayout();
+        return;
+      }
+    }
 
     // Items inserted above the viewport with preserveScrollPosition: move the
     // scroll position by their extent so the visible items stay in place.
