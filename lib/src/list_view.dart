@@ -42,7 +42,8 @@ class SuperListView extends BoxScrollView {
     this.extentEstimation,
     this.extentPrecalculationPolicy,
     this.delayPopulatingCacheArea = false,
-  }) : childrenDelegate = SliverChildListDelegate(
+  }) : listControllerIndexesItems = false,
+       childrenDelegate = SliverChildListDelegate(
          children,
          addAutomaticKeepAlives: addAutomaticKeepAlives,
          addRepaintBoundaries: addRepaintBoundaries,
@@ -88,7 +89,8 @@ class SuperListView extends BoxScrollView {
     this.extentEstimation,
     this.extentPrecalculationPolicy,
     this.delayPopulatingCacheArea = false,
-  }) : assert(itemCount == null || itemCount >= 0),
+  }) : listControllerIndexesItems = false,
+       assert(itemCount == null || itemCount >= 0),
        assert(semanticChildCount == null || semanticChildCount <= itemCount!),
        childrenDelegate = SliverChildBuilderDelegate(
          itemBuilder,
@@ -138,6 +140,7 @@ class SuperListView extends BoxScrollView {
     this.extentEstimation,
     this.extentPrecalculationPolicy,
     this.delayPopulatingCacheArea = false,
+    this.listControllerIndexesItems = true,
   }) : assert(itemCount >= 0),
        childrenDelegate = SliverChildBuilderDelegate(
          (BuildContext context, int index) {
@@ -191,6 +194,7 @@ class SuperListView extends BoxScrollView {
     this.extentEstimation,
     this.extentPrecalculationPolicy,
     this.delayPopulatingCacheArea = false,
+    this.listControllerIndexesItems = false,
   });
 
   /// A delegate that provides the children for the [ListView].
@@ -204,6 +208,11 @@ class SuperListView extends BoxScrollView {
   /// When set provides access to extents of individual children.
   /// [ListController] can also be used to jump to a specific item in the list.
   final ListController? listController;
+
+  /// Whether [listController] addresses items only, skipping separators.
+  /// This is `true` by default for [SuperListView.separated]. Set it to `false`
+  /// there to index all children (items at even, separators at odd indices).
+  final bool listControllerIndexesItems;
 
   /// Optional method that can be used to override default estimated extent for
   /// each item. Initially all extents are estimated and then as the items are laid
@@ -232,6 +241,7 @@ class SuperListView extends BoxScrollView {
     return SuperSliverList(
       delegate: childrenDelegate,
       listController: listController,
+      listControllerIndexesItems: listControllerIndexesItems,
       delayPopulatingCacheArea: delayPopulatingCacheArea,
       extentEstimation: extentEstimation,
       extentPrecalculationPolicy: extentPrecalculationPolicy,

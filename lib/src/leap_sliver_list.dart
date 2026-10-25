@@ -133,7 +133,10 @@ class ListController extends ChangeNotifier {
     for (final position in scrollController.positions) {
       AnimateToItem(
         extentManager: _delegate!,
-        index: index,
+        index: () {
+          final itemIndex = index();
+          return itemIndex == null ? null : _childIndex(itemIndex);
+        },
         alignment: alignment,
         rect: rect,
         position: position,
@@ -146,20 +149,21 @@ class ListController extends ChangeNotifier {
   /// Returns the range of items indices currently visible in the viewport.
   (int, int)? get visibleRange {
     assert(_delegate != null, "ListController is not attached.");
-    return _delegate!.visibleRange;
+    return _itemRange(_delegate!.visibleRange);
   }
 
   /// Returns range of items indices currently visible in the viewport
   /// unobstructed by sticky headers or other obstructions.
   (int, int)? get unobstructedVisibleRange {
     assert(_delegate != null, "ListController is not attached.");
-    return _delegate!.unobstructedVisibleRange;
+    return _itemRange(_delegate!.unobstructedVisibleRange);
   }
 
   /// Returns the total number of items in the list.
   int get numberOfItems {
     assert(_delegate != null, "ListController is not attached.");
-    return _delegate!.numberOfItems;
+    final children = _delegate!.numberOfItems;
+    return _delegate!.separated ? (children + 1) ~/ 2 : children;
   }
 
   /// Returns the number of items in the list with estimated extent.
@@ -175,7 +179,7 @@ class ListController extends ChangeNotifier {
   /// out yet (see [extentForIndex]).
   double offsetForIndex(int index) {
     assert(_delegate != null, "ListController is not attached.");
-    return _delegate!.offsetForIndex(index);
+    return _delegate!.offsetForIndex(_childIndex(index));
   }
 
   /// Returns the extent of the item at [index].
@@ -189,7 +193,7 @@ class ListController extends ChangeNotifier {
   /// scrolled into view, laid out and measured.
   (double, bool isEstimated) extentForIndex(int index) {
     assert(_delegate != null, "ListController is not attached.");
-    return _delegate!.extentForIndex(index);
+    return _delegate!.extentForIndex(_childIndex(index));
   }
 
   /// Returns the sum of all the extents of the items in the list.
@@ -215,7 +219,11 @@ class ListController extends ChangeNotifier {
   /// [ExtentPrecalculationPolicy] allows for eagerly precalculating extents.
   void invalidateExtent(int index) {
     assert(_delegate != null, "ListController is not attached.");
-    _delegate!.invalidateExtent(index);
+    final child = _childIndex(index);
+    _delegate!.invalidateExtent(child);
+    if (_delegate!.separated && child + 1 < _delegate!.numberOfItems) {
+      _delegate!.invalidateExtent(child + 1);
+    }
   }
 
   /// Invalidates the extent of all items in the list.
@@ -234,7 +242,23 @@ class ListController extends ChangeNotifier {
   /// eagerly precalculating extents.
   void addItem(int index) {
     assert(_delegate != null, "ListController is not attached.");
-    _delegate!.addItem(index);
+    final manager = _delegate!;
+    if (!manager.separated) {
+      manager.addItem(index);
+      return;
+    }
+    final children = manager.numberOfItems;
+    if (children == 0) {
+      manager.addItem(0);
+    } else if (index * 2 >= children + 1) {
+      // Appending: new separator followed by the new item.
+      manager.addItem(children);
+      manager.addItem(children + 1);
+    } else {
+      // Inserting before an existing item: new item followed by a separator.
+      manager.addItem(index * 2);
+      manager.addItem(index * 2 + 1);
+    }
   }
 
   /// Signals that an item has been removed from the list at [index].
@@ -245,8 +269,51 @@ class ListController extends ChangeNotifier {
   /// eagerly precalculating extents.
   void removeItem(int index) {
     assert(_delegate != null, "ListController is not attached.");
-    _delegate!.removeItem(index);
+    final manager = _delegate!;
+    if (!manager.separated) {
+      manager.removeItem(index);
+      return;
+    }
+    final children = manager.numberOfItems;
+    final child = index * 2;
+    if (children <= 1) {
+      manager.removeItem(child);
+    } else if (child + 1 < children) {
+      // Remove the item together with the separator that follows it.
+      manager.removeItem(child);
+      manager.removeItem(child);
+    } else {
+      // Last item: remove the separator that precedes it.
+      manager.removeItem(child);
+      manager.removeItem(child - 1);
+    }
   }
+
+  // Translates an item index to the index of the corresponding child.
+  int _childIndex(int itemIndex) =>
+      _delegate!.separated ? itemIndex * 2 : itemIndex;
+
+  // Translates a range of child indices to a range of item indices.
+  (int, int)? _itemRange((int, int)? children) {
+    if (children == null || !_delegate!.separated) {
+      return children;
+    }
+    final start = (children.$1 + 1) ~/ 2;
+    final end = children.$2 ~/ 2;
+    return start > end ? null : (start, end);
+  }
+
+  /// Index of the first item visible in the viewport, or `null` if no item
+  /// is visible. Items that are partially visible count as visible.
+  ///
+  /// This is the same as the start of [visibleRange].
+  int? get firstVisibleIndex => visibleRange?.$1;
+
+  /// Index of the last item visible in the viewport, or `null` if no item
+  /// is visible. Items that are partially visible count as visible.
+  ///
+  /// This is the same as the end of [visibleRange].
+  int? get lastVisibleIndex => visibleRange?.$2;
 
   @override
   void dispose() {
@@ -295,7 +362,7 @@ class ListController extends ChangeNotifier {
   double getOffsetToReveal(int index, double alignment, {Rect? rect}) {
     assert(_delegate != null, "ListController is not attached.");
     return _delegate!.getOffsetToReveal(
-      index,
+      _childIndex(index),
       alignment,
       rect: rect,
       estimationOnly: false,
@@ -407,6 +474,7 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
     this.extentEstimation,
     this.delayPopulatingCacheArea = true,
     this.layoutKeptAliveChildren = false,
+    this.listControllerIndexesItems = false,
   });
 
   /// Creates a SuperSliverList from widget builder.
@@ -425,7 +493,8 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
     bool addAutomaticKeepAlives = true,
     bool addRepaintBoundaries = true,
     bool addSemanticIndexes = true,
-  }) : super(
+  }) : listControllerIndexesItems = false,
+       super(
          delegate: SliverChildBuilderDelegate(
            itemBuilder,
            findChildIndexCallback: findChildIndexCallback,
@@ -450,6 +519,7 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
     this.extentEstimation,
     this.delayPopulatingCacheArea = true,
     this.layoutKeptAliveChildren = false,
+    this.listControllerIndexesItems = true,
     int? itemCount,
     bool addAutomaticKeepAlives = true,
     bool addRepaintBoundaries = true,
@@ -499,7 +569,8 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
     bool addAutomaticKeepAlives = true,
     bool addRepaintBoundaries = true,
     bool addSemanticIndexes = true,
-  }) : super(
+  }) : listControllerIndexesItems = false,
+       super(
          delegate: SliverChildListDelegate(
            children,
            addAutomaticKeepAlives: addAutomaticKeepAlives,
@@ -511,6 +582,15 @@ class SuperSliverList extends SliverMultiBoxAdaptorWidget {
   /// When set provides access to extents of individual children.
   /// [ListController] can also be used to jump to a specific item in the list.
   final ListController? listController;
+
+  /// Whether the children alternate between items and separators, in which
+  /// case the [listController] addresses items only: index `n` is the n-th item
+  /// and separators are skipped.
+  ///
+  /// This is `true` by default for [SuperSliverList.separated]. Set it to
+  /// `false` there to get the previous behavior, where the controller indexes
+  /// all children (items at even indices, separators at odd indices).
+  final bool listControllerIndexesItems;
 
   /// Optional method that can be used to override default estimated extent for
   /// each item. Initially all extents are estimated and then as the items are laid

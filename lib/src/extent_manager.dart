@@ -25,6 +25,11 @@ class ExtentManager with ChangeNotifier {
 
   final ExtentManagerDelegate delegate;
 
+  /// Whether children alternate between items and separators. The manager
+  /// itself always works with child indices; [ListController] uses this flag
+  /// to translate the item indices of its public API.
+  bool separated = false;
+
   double get correctionPercentage => _afterCorrection / _beforeCorrection;
 
   void setExtent(int index, double extent, {bool isEstimation = false}) {
