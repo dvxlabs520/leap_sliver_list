@@ -3,6 +3,7 @@ import "package:flutter/material.dart";
 import "pages/anchoring_page.dart";
 import "pages/big_list_page.dart";
 import "pages/chat_page.dart";
+import "pages/compare_page.dart";
 import "pages/sections_page.dart";
 
 class _Destination {
@@ -33,6 +34,11 @@ final _destinations = <_Destination>[
     "Anchoring",
     Icons.anchor,
     (_) => const AnchoringPage(),
+  ),
+  _Destination(
+    "Compare",
+    Icons.speed,
+    (_) => const ComparePage(),
   ),
 ];
 

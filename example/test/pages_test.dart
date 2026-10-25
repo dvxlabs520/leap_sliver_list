@@ -93,6 +93,51 @@ void main() {
     }
   });
 
+  testWidgets("compare page switches lists and auto scrolls", (tester) async {
+    await _pumpApp(tester);
+    await _openPage(tester, "Compare");
+    await tester.tap(find.text("Jump to item 7500"));
+    await tester.pumpAndSettle();
+    expect(find.text("Item 7500"), findsOneWidget);
+
+    await tester.tap(find.text("SliverList"));
+    await tester.pumpAndSettle();
+    expect(find.text("Item 0"), findsOneWidget);
+
+    await tester.tap(find.text("Auto scroll"));
+    await tester.pump();
+    for (var i = 0; i < 20; ++i) {
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    expect(find.text("Item 0"), findsNothing);
+    await tester.tap(find.text("Auto scroll"));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets("every page fits a phone screen", (tester) async {
+    tester.view.physicalSize = const Size(390, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(const DemoApp());
+    for (final title in [
+      "Big list",
+      "Chat",
+      "Sections",
+      "Anchoring",
+      "Compare"
+    ]) {
+      await tester.tap(
+        find.descendant(
+          of: find.byType(NavigationBar),
+          matching: find.text(title),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: title);
+    }
+  });
+
   testWidgets("theme can be switched", (tester) async {
     await _pumpApp(tester);
     await tester.tap(find.byTooltip("Dark theme"));
