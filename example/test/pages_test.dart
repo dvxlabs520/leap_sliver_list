@@ -72,6 +72,63 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets("sections show which header is pinned and keep footers", (
+    tester,
+  ) async {
+    await _pumpApp(tester);
+    await _openPage(tester, "Sections");
+    expect(find.text("Pinned: Section 0"), findsOneWidget);
+    // The footer of the first section sits at the bottom of the viewport.
+    final viewport = tester.getRect(find.byType(Scrollable).last);
+    expect(
+      tester.getRect(find.byKey(const ValueKey("footer-0"))).bottom,
+      closeTo(viewport.bottom, 0.5),
+    );
+
+    await tester.tap(find.text("Jump"));
+    await tester.pumpAndSettle();
+    expect(find.text("Pinned: Section 6"), findsOneWidget);
+    expect(
+      tester.getRect(find.byKey(const ValueKey("footer-6"))).bottom,
+      closeTo(viewport.bottom, 0.5),
+    );
+
+    await tester.tap(find.byType(Switch));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey("footer-6")), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets("grid jumps to an item and changes columns", (tester) async {
+    await _pumpApp(tester);
+    await _openPage(tester, "Grid");
+    expect(find.text("Card 0"), findsOneWidget);
+    expect(find.textContaining("Visible: 0"), findsOneWidget);
+
+    await tester.tap(find.text("Jump"));
+    await tester.pumpAndSettle();
+    expect(find.text("Card 5000"), findsOneWidget);
+    expect(find.text("Card 0"), findsNothing);
+    final viewport = tester.getRect(find.byType(Scrollable).last);
+    // The row of the item is at the top of the grid.
+    expect(
+      tester.getRect(find.text("Card 5000")).top,
+      lessThan(viewport.top + 80),
+    );
+
+    final before =
+        tester.getRect(find.byKey(const ValueKey("card-5000"))).width;
+    await tester.tap(find.text("2"));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text("Jump"));
+    await tester.pumpAndSettle();
+    expect(
+      tester.getRect(find.byKey(const ValueKey("card-5000"))).width,
+      greaterThan(before),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets("anchoring keeps visible items in place", (tester) async {
     for (final anchoring in [true, false]) {
       await tester.pumpWidget(const SizedBox());
@@ -124,6 +181,7 @@ void main() {
       "Big list",
       "Chat",
       "Sections",
+      "Grid",
       "Anchoring",
       "Compare"
     ]) {

@@ -21,6 +21,9 @@ class _SectionsPageState extends State<SectionsPage> {
     for (var i = 0; i < _sectionCount; ++i) ListController(),
   ];
 
+  final _stickyController = StickyHeaderController();
+
+  bool _footers = true;
   int _section = 6;
   int _item = 15;
   double _alignment = 0.5;
@@ -28,6 +31,7 @@ class _SectionsPageState extends State<SectionsPage> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _stickyController.dispose();
     for (final controller in _listControllers) {
       controller.dispose();
     }
@@ -111,9 +115,35 @@ class _SectionsPageState extends State<SectionsPage> {
                     ),
                   ],
                 ),
+                Wrap(
+                  spacing: 12,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    ValueListenableBuilder<int?>(
+                      valueListenable: _stickyController,
+                      builder: (context, section, _) => Chip(
+                        avatar: const Icon(Icons.push_pin_outlined, size: 18),
+                        label: Text(
+                          "Pinned: ${section == null ? "-" : "Section $section"}",
+                        ),
+                      ),
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text("Section footers"),
+                        Switch(
+                          value: _footers,
+                          onChanged: (v) => setState(() => _footers = v),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
                 Text(
                   "The item is aligned in the part of the viewport that the "
-                  "sticky header does not cover, whatever the alignment.",
+                  "sticky header and the footer do not cover, whatever the "
+                  "alignment.",
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
@@ -126,6 +156,8 @@ class _SectionsPageState extends State<SectionsPage> {
             slivers: [
               for (var s = 0; s < _sectionCount; ++s)
                 SuperStickyHeader(
+                  controller: _stickyController,
+                  index: s,
                   header: Material(
                     key: ValueKey("header-$s"),
                     color: scheme.secondaryContainer,
@@ -142,23 +174,48 @@ class _SectionsPageState extends State<SectionsPage> {
                       ),
                     ),
                   ),
-                  sliver: SuperSliverList.builder(
-                    listController: _listControllers[s],
-                    itemCount: _itemsPerSection,
-                    itemBuilder: (context, index) => ListTile(
-                      title: Text("Section $s, item $index"),
-                      subtitle: Text(
-                        sampleText(
-                            s * 100 + index, 3 + hashed(s * 50 + index, 14)),
-                      ),
-                      selected: s == _section && index == _item,
-                    ),
-                  ),
+                  sliver: _buildSection(s, scheme),
                 ),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSection(int s, ColorScheme scheme) {
+    final list = SuperSliverList.builder(
+      listController: _listControllers[s],
+      itemCount: _itemsPerSection,
+      itemBuilder: (context, index) => ListTile(
+        title: Text("Section $s, item $index"),
+        subtitle: Text(
+          sampleText(s * 100 + index, 3 + hashed(s * 50 + index, 14)),
+        ),
+        selected: s == _section && index == _item,
+      ),
+    );
+    if (!_footers) {
+      return list;
+    }
+    return SuperStickyFooter(
+      footer: Material(
+        key: ValueKey("footer-$s"),
+        color: scheme.tertiaryContainer,
+        elevation: 1,
+        child: Container(
+          height: 36,
+          alignment: Alignment.centerLeft,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            "Section $s: $_itemsPerSection items",
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: scheme.onTertiaryContainer,
+                ),
+          ),
+        ),
+      ),
+      sliver: list,
     );
   }
 }
