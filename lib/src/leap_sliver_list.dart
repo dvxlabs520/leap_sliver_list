@@ -87,6 +87,9 @@ class ListController extends ChangeNotifier {
     Rect? rect,
   }) {
     assert(_delegate != null, "ListController is not attached.");
+    for (final position in scrollController.positions) {
+      _cancelAnimations(position);
+    }
     final offset = getOffsetToReveal(index, alignment, rect: rect);
     if (offset.isFinite) {
       final minExtent = scrollController.position.minScrollExtent;
@@ -121,7 +124,12 @@ class ListController extends ChangeNotifier {
   /// edge of the viewport. If the value is 0.5, the item will be positioned in
   /// the middle of the viewport. If the value is 1.0, the item will be
   /// positioned at the trailing edge of the viewport.
-  void animateToItem({
+  ///
+  /// Returns an [ItemAnimation] that can be awaited and canceled. The animation
+  /// is canceled automatically when the user scrolls the list, when another
+  /// animation or [jumpToItem] starts on the same scroll position and when
+  /// the controller is detached from the list.
+  ItemAnimation animateToItem({
     required ValueGetter<int?> index,
     required ScrollController scrollController,
     required double alignment,
@@ -130,8 +138,12 @@ class ListController extends ChangeNotifier {
     Rect? rect,
   }) {
     assert(_delegate != null, "ListController is not attached.");
-    for (final position in scrollController.positions) {
-      AnimateToItem(
+    final parts = <AnimateToItem>[];
+    for (final position in scrollController.positions.toList()) {
+      _cancelAnimations(position);
+      late final AnimateToItem part;
+      part = AnimateToItem(
+        onFinished: () => _animations.remove(part),
         extentManager: _delegate!,
         index: () {
           final itemIndex = index();
@@ -142,7 +154,24 @@ class ListController extends ChangeNotifier {
         position: position,
         curve: curve,
         duration: duration,
-      ).animate();
+      );
+      _animations.add(part);
+      parts.add(part);
+    }
+    final animation = ItemAnimation.internal(parts);
+    for (final part in parts) {
+      part.start();
+    }
+    return animation;
+  }
+
+  final _animations = <AnimateToItem>{};
+
+  void _cancelAnimations([ScrollPosition? position]) {
+    for (final animation in _animations.toList()) {
+      if (position == null || animation.position == position) {
+        animation.cancel();
+      }
     }
   }
 
@@ -330,6 +359,7 @@ class ListController extends ChangeNotifier {
       return;
     }
     if (_delegate != null) {
+      _cancelAnimations();
       onDetached?.call();
     }
     _delegate?.removeListener(notifyListeners);
@@ -342,6 +372,7 @@ class ListController extends ChangeNotifier {
 
   void unsetDelegate(ExtentManager delegate) {
     if (_delegate == delegate) {
+      _cancelAnimations();
       _delegate?.removeListener(notifyListeners);
       _delegate = null;
       onDetached?.call();
