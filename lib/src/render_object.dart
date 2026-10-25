@@ -569,6 +569,17 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
       return;
     }
 
+    // Remember at the start of the pass whether the end of the list was in
+    // view, before anything below changes the extent.
+    if (stickToEnd && _stickPass != layoutPass) {
+      _stickPass = layoutPass;
+      _stickWasAtEnd =
+          (initialItem == null || _initialItemApplied) &&
+          constraints.growthDirection == GrowthDirection.forward &&
+          constraints.scrollOffset + constraints.remainingPaintExtent >=
+              (geometry?.scrollExtent ?? 0.0) - precisionErrorTolerance;
+    }
+
     // Scroll to the initial item before anything is built around the top of
     // the list, so there is no flash of the first items.
     final initialCorrection = _initialItemCorrection(layoutPass);
@@ -1073,6 +1084,24 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
       return;
     }
 
+    if (stickToEnd && _stickWasAtEnd && _stickPass == layoutPass) {
+      final stickCorrection =
+          _totalExtent() -
+          constraints.remainingPaintExtent -
+          constraints.scrollOffset;
+      if (stickCorrection > precisionErrorTolerance &&
+          layoutPass.correctionCount < 8) {
+        _log.fine(
+          "Scroll offset correction: ${stickCorrection.format()} "
+          "(reason: stick to end)",
+        );
+        ++layoutPass.correctionCount;
+        geometry = SliverGeometry(scrollOffsetCorrection: stickCorrection);
+        childManager.didFinishLayout();
+        return;
+      }
+    }
+
     final endScrollOffset = _totalExtent();
     final cacheStart = constraints.scrollOffset + constraints.cacheOrigin;
     final lastChildEnd =
@@ -1125,6 +1154,8 @@ class RenderSuperSliverList extends RenderSliverMultiBoxAdaptor
     childManager.didFinishLayout();
   }
 
+  LayoutPass? _stickPass;
+  bool _stickWasAtEnd = false;
   bool _initialItemApplied = false;
 
   /// Returns the scroll offset correction that moves [initialItem] into view
