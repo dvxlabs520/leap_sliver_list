@@ -1,6 +1,6 @@
-## 0.6.0-dev
+## 0.6.0
 
-New features. All changes are backwards compatible (additions only).
+Released 2026-10-26. New features. All changes are backwards compatible (additions only).
 
 ### New API
 
